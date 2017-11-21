@@ -31,7 +31,10 @@ using utest::v1::Case;
 volatile uint32_t elapsed_time_ms = 0;
 static const int test_timeout = 40;
 
-
+// aaa
+// aaa
+// aaa
+// xxxxxxxxxxxxxxxx
 void update_tick_thread(Mutex *mutex)
 {
     while (true) {
