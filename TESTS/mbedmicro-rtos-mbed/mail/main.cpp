@@ -41,7 +41,8 @@ typedef struct {
     uint8_t thread_id;
 } mail_t;
 
-
+// bbb
+// bbb
 template<uint8_t thread_id, uint32_t wait_ms, uint32_t send_count>
 void send_thread(Mail<mail_t, QUEUE_SIZE> *m)
 {
