@@ -218,6 +218,11 @@ int _ticker_match_interval_passed(timestamp_t prev_tick, timestamp_t cur_tick, t
  * in ticker.queue.max_delta. This is necessary to keep track
  * of the timer overflow.
  */
+
+volatile uint32_t interval_passed_tick_last_read = 0;
+volatile timestamp_t interval_passed_cur_tick = 0;
+volatile timestamp_t interval_passed_match_tick = 0;
+
 static void schedule_interrupt(const ticker_data_t *const ticker)
 {
     ticker_event_queue_t *queue = ticker->queue;
@@ -245,6 +250,10 @@ static void schedule_interrupt(const ticker_data_t *const ticker)
 
         ticker->interface->set_interrupt(match_tick);
         timestamp_t cur_tick = ticker->interface->read();
+
+        interval_passed_tick_last_read = queue->tick_last_read;
+        interval_passed_cur_tick = cur_tick;
+//        interval_passed_match_tick = match_tick;
 
         if (_ticker_match_interval_passed(queue->tick_last_read, cur_tick, match_tick)) {
             ticker->interface->fire_interrupt();

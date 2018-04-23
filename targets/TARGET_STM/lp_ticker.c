@@ -234,6 +234,12 @@ uint32_t lp_ticker_read(void)
     return lp_ticker_read_TickCounter() * (uint32_t)lp_TickPeriod_us;
 }
 
+volatile timestamp_t mboc_timestamp = 0;
+volatile uint16_t mboc_lp_TickPeriod_us = 0;
+volatile uint32_t mboc_timestamp_TickCounter = 0;
+volatile uint32_t mboc_read = 0;
+volatile uint32_t mboc_read2 = 0;
+
 void lp_ticker_set_interrupt(timestamp_t timestamp)
 {
     // Disable IRQs
@@ -244,16 +250,23 @@ void lp_ticker_set_interrupt(timestamp_t timestamp)
     LptimHandle.Instance = LPTIM1;
     irq_handler = (void (*)(void))lp_ticker_irq_handler;
 
+    mboc_read = lp_ticker_read_TickCounter();
+
     __HAL_LPTIM_CLEAR_FLAG(&LptimHandle, LPTIM_FLAG_CMPOK);
     __HAL_LPTIM_CLEAR_FLAG(&LptimHandle, LPTIM_FLAG_CMPM);
     __HAL_LPTIM_COMPARE_SET(&LptimHandle, timestamp_TickCounter & 0xFFFF);
 
+
+    mboc_timestamp = timestamp;
+    mboc_lp_TickPeriod_us = lp_TickPeriod_us;
+    mboc_timestamp_TickCounter = timestamp_TickCounter;
     /* CMPOK is set by hardware to inform application that the APB bus write operation to the LPTIM_CMP register has been successfully completed */
     while (__HAL_LPTIM_GET_FLAG(&LptimHandle, LPTIM_FLAG_CMPOK) == RESET) {
     }
 
     /* same algo as us_ticker_set_interrupt in us_ticker_16b.c */
     uint32_t current_time_TickCounter = lp_ticker_read_TickCounter();
+    mboc_read2 = current_time_TickCounter;
     uint32_t delta = timestamp_TickCounter - current_time_TickCounter;
     lp_oc_int_part = (delta - 1) >> 16;
     if ( ((delta - 1) & 0xFFFF) >= 0x8000 &&

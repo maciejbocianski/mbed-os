@@ -25,7 +25,7 @@
 
 using utest::v1::Case;
 
-static const int test_timeout = 10;
+static const int test_timeout = 120;
 
 #define TICKER_COUNT 16
 #define MULTI_TICKER_TIME_MS 100
@@ -68,21 +68,94 @@ void increment_multi_counter(void)
     When schedule them one after the other with the different time intervals
     Then tickers properly execute callbacks
  */
+
+extern volatile timestamp_t mboc_timestamp;
+extern volatile uint16_t mboc_lp_TickPeriod_us;
+extern volatile uint32_t mboc_timestamp_TickCounter;
+extern volatile uint32_t mboc_read;
+extern volatile uint32_t mboc_read2;
+extern volatile uint32_t interval_passed_tick_last_read;
+extern volatile timestamp_t interval_passed_cur_tick;
+extern volatile timestamp_t interval_passed_match_tick;
+
 void test_multi_ticker(void)
 {
     LowPowerTicker ticker[TICKER_COUNT];
     const uint32_t extra_wait = 10; // extra 10ms wait time
 
-    multi_counter = 0;
-    for (int i = 0; i < TICKER_COUNT; i++) {
-        ticker[i].attach_us(callback(increment_multi_counter), MULTI_TICKER_TIME_MS * 1000);
-    }
+    while(true)
+    {
+        const ticker_data_t *td = get_lp_ticker_data();
+        ticker_event_t *te;
 
-    Thread::wait(MULTI_TICKER_TIME_MS + extra_wait);
-    for (int i = 0; i < TICKER_COUNT; i++) {
-            ticker[i].detach();
+        us_timestamp_t pt0 = td->queue->present_time;
+        multi_counter = 0;
+        mboc_timestamp = mboc_lp_TickPeriod_us = mboc_timestamp_TickCounter = mboc_read = 0;
+        interval_passed_tick_last_read = interval_passed_cur_tick = interval_passed_match_tick = 0;
+        for (int i = 0; i < TICKER_COUNT; i++) {
+            ticker[i].attach_us(callback(increment_multi_counter), MULTI_TICKER_TIME_MS * 1000);
+        }
+        te = td->queue->head;
+        uint32_t i = 0;
+        us_timestamp_t timestamps1[20] = { 0 };
+        us_timestamp_t timestamps2[20] = { 0 };
+        us_timestamp_t pt1 = td->queue->present_time;
+        while(te != NULL) {
+            timestamps1[i] = te->timestamp;
+            i++;
+            te = te->next;
+        }
+        ticker_read_us(td);
+        us_timestamp_t pt2 = td->queue->present_time;
+
+        Thread::wait(MULTI_TICKER_TIME_MS + extra_wait);
+        uint32_t stored_mboc_read = mboc_read;
+        uint32_t stored_mboc_read2 = mboc_read2;
+        uint32_t multi_counter_stored = multi_counter;
+        uint32_t stored_mboc_timestamp = mboc_timestamp;
+        uint16_t stored_mboc_lp_TickPeriod_us = mboc_lp_TickPeriod_us;
+        uint32_t stored_mboc_timestamp_TickCounter = mboc_timestamp_TickCounter;
+        uint32_t stored_interval_passed_tick_last_read = interval_passed_tick_last_read;
+        uint32_t stored_interval_passed_cur_tick = interval_passed_cur_tick;
+        uint32_t stored_interval_passed_match_tick = interval_passed_match_tick;
+        us_timestamp_t pt3 = td->queue->present_time;
+        ticker_read_us(td);
+        us_timestamp_t pt4 = td->queue->present_time;
+        te = td->queue->head;
+        i = 0;
+        while(te != NULL) {
+            timestamps2[i] = te->timestamp;
+            i++;
+            te = te->next;
+        }
+        for (int i = 0; i < TICKER_COUNT; i++) {
+                ticker[i].detach();
+        }
+
+        printf("0 pt %llu\r\n", pt0);
+        printf("1 pt %llu\r\n", pt1);
+        for(uint32_t j = 0; j < 20; j++) {
+            printf("[%u] %llu  ", j, timestamps1[j]);
+        }
+        printf("\r\n");
+        for(uint32_t j = 0; j < 20; j++) {
+            printf("[%u] %llu  ", j, timestamps2[j]);
+        }
+        printf("\r\n");
+        printf("2 pt %llu\r\n", pt2);
+        printf("3 pt %llu\r\n", pt3);
+        printf("4 pt %llu\r\n", pt4);
+        printf("multi_counter_stored %u\r\n", multi_counter_stored);
+        printf("stored_mboc_timestamp %u\r\n", stored_mboc_timestamp);
+        printf("stored_mboc_lp_TickPeriod_us %u\r\n", stored_mboc_lp_TickPeriod_us);
+        printf("stored_mboc_timestamp_TickCounter %u\r\n", stored_mboc_timestamp_TickCounter);
+        printf("stored_mboc_read %u\r\n", stored_mboc_read);
+        printf("stored_mboc_read2 %u\r\n", stored_mboc_read2);
+        printf("stored_interval_passed_tick_last_read %u\r\n", stored_interval_passed_tick_last_read);
+        printf("stored_interval_passed_cur_tick %u\r\n", stored_interval_passed_cur_tick);
+        printf("stored_interval_passed_match_tick %u\r\n", stored_mboc_timestamp);
+        TEST_ASSERT_EQUAL(TICKER_COUNT, multi_counter_stored);
     }
-    TEST_ASSERT_EQUAL(TICKER_COUNT, multi_counter);
 
     multi_counter = 0;
     for (int i = 0; i < TICKER_COUNT; i++) {
@@ -194,16 +267,16 @@ void test_attach_us_time(void)
 
 // Test cases
 Case cases[] = {
-    Case("Test attach for 0.001s and time measure", test_attach_time<1000>),
-    Case("Test attach_us for 1ms and time measure", test_attach_us_time<1000>),
-    Case("Test attach for 0.01s and time measure", test_attach_time<10000>),
-    Case("Test attach_us for 10ms and time measure", test_attach_us_time<10000>),
-    Case("Test attach for 0.1s and time measure", test_attach_time<100000>),
-    Case("Test attach_us for 100ms and time measure", test_attach_us_time<100000>),
-    Case("Test attach for 0.5s and time measure", test_attach_time<500000>),
-    Case("Test attach_us for 500ms and time measure", test_attach_us_time<500000>),
-    Case("Test detach", test_detach),
-    Case("Test multi call and time measure", test_multi_call_time),
+//    Case("Test attach for 0.001s and time measure", test_attach_time<1000>),
+//    Case("Test attach_us for 1ms and time measure", test_attach_us_time<1000>),
+//    Case("Test attach for 0.01s and time measure", test_attach_time<10000>),
+//    Case("Test attach_us for 10ms and time measure", test_attach_us_time<10000>),
+//    Case("Test attach for 0.1s and time measure", test_attach_time<100000>),
+//    Case("Test attach_us for 100ms and time measure", test_attach_us_time<100000>),
+//    Case("Test attach for 0.5s and time measure", test_attach_time<500000>),
+//    Case("Test attach_us for 500ms and time measure", test_attach_us_time<500000>),
+//    Case("Test detach", test_detach),
+//    Case("Test multi call and time measure", test_multi_call_time),
     Case("Test multi ticker", test_multi_ticker),
 };
 
