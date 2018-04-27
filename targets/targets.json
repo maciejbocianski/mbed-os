@@ -1342,7 +1342,7 @@
                 "value": 1
             }
         },
-        "macros_add": ["USBHOST_OTHER"],
+        "macros_add": ["USBHOST_OTHER", "LOWPOWERTIMER_DELAY_TICKS=305"],
         "supported_form_factors": ["ARDUINO"],
         "detect_code": ["0816"],
         "device_has_add": ["ANALOGOUT", "CAN", "LOWPOWERTIMER", "SERIAL_ASYNCH", "TRNG", "FLASH"],
