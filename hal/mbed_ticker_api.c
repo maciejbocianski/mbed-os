@@ -196,10 +196,11 @@ static timestamp_t compute_tick(const ticker_data_t *const ticker, us_timestamp_
 /**
  * Return 1 if the tick has incremented to or past match_tick, otherwise 0.
  */
+extern volatile uint16_t lp_TickPeriod_us;
 int _ticker_match_interval_passed(timestamp_t prev_tick, timestamp_t cur_tick, timestamp_t match_tick)
 {
     if (match_tick > prev_tick) {
-        return (cur_tick >= match_tick) || (cur_tick < prev_tick);
+        return (cur_tick >= match_tick) || /*((match_tick - cur_tick) <= lp_TickPeriod_us) ||*/ (cur_tick < prev_tick);
     } else {
         return (cur_tick < prev_tick) && (cur_tick >= match_tick);
     }
