@@ -25,7 +25,7 @@
 
 using utest::v1::Case;
 
-static const int test_timeout = 10;
+static const int test_timeout = 300;
 
 #define TICKER_COUNT 16
 #define MULTI_TICKER_TIME_MS 100
@@ -73,16 +73,19 @@ void test_multi_ticker(void)
     LowPowerTicker ticker[TICKER_COUNT];
     const uint32_t extra_wait = 10; // extra 10ms wait time
 
-    multi_counter = 0;
-    for (int i = 0; i < TICKER_COUNT; i++) {
-        ticker[i].attach_us(callback(increment_multi_counter), MULTI_TICKER_TIME_MS * 1000);
-    }
+    while(true)
+    {
+        multi_counter = 0;
+        for (int i = 0; i < TICKER_COUNT; i++) {
+            ticker[i].attach_us(callback(increment_multi_counter), MULTI_TICKER_TIME_MS * 1000);
+        }
 
-    Thread::wait(MULTI_TICKER_TIME_MS + extra_wait);
-    for (int i = 0; i < TICKER_COUNT; i++) {
-            ticker[i].detach();
+        Thread::wait(MULTI_TICKER_TIME_MS + extra_wait);
+        for (int i = 0; i < TICKER_COUNT; i++) {
+                ticker[i].detach();
+        }
+        TEST_ASSERT_EQUAL(TICKER_COUNT, multi_counter);
     }
-    TEST_ASSERT_EQUAL(TICKER_COUNT, multi_counter);
 
     multi_counter = 0;
     for (int i = 0; i < TICKER_COUNT; i++) {
@@ -194,17 +197,17 @@ void test_attach_us_time(void)
 
 // Test cases
 Case cases[] = {
-    Case("Test attach for 0.001s and time measure", test_attach_time<1000>),
-    Case("Test attach_us for 1ms and time measure", test_attach_us_time<1000>),
-    Case("Test attach for 0.01s and time measure", test_attach_time<10000>),
-    Case("Test attach_us for 10ms and time measure", test_attach_us_time<10000>),
-    Case("Test attach for 0.1s and time measure", test_attach_time<100000>),
-    Case("Test attach_us for 100ms and time measure", test_attach_us_time<100000>),
-    Case("Test attach for 0.5s and time measure", test_attach_time<500000>),
-    Case("Test attach_us for 500ms and time measure", test_attach_us_time<500000>),
-    Case("Test detach", test_detach),
-    Case("Test multi call and time measure", test_multi_call_time),
-    Case("Test multi ticker", test_multi_ticker),
+//    Case("Test attach for 0.001s and time measure", test_attach_time<1000>),
+//    Case("Test attach_us for 1ms and time measure", test_attach_us_time<1000>),
+//    Case("Test attach for 0.01s and time measure", test_attach_time<10000>),
+//    Case("Test attach_us for 10ms and time measure", test_attach_us_time<10000>),
+//    Case("Test attach for 0.1s and time measure", test_attach_time<100000>),
+//    Case("Test attach_us for 100ms and time measure", test_attach_us_time<100000>),
+//    Case("Test attach for 0.5s and time measure", test_attach_time<500000>),
+//    Case("Test attach_us for 500ms and time measure", test_attach_us_time<500000>),
+//    Case("Test detach", test_detach),
+//    Case("Test multi call and time measure", test_multi_call_time),
+    Case("Test multi ticker", test_multi_ticker)
 };
 
 utest::v1::status_t greentea_test_setup(const size_t number_of_cases)
