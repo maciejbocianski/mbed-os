@@ -52,8 +52,6 @@ static void (*irq_handler)(void);
 
 void lp_ticker_init(void)
 {
-    NVIC_DisableIRQ(LPTIM1_IRQn);
-
     /* Check if LPTIM is already configured */
 #if (TARGET_STM32L0)
     if (READ_BIT(RCC->APB1ENR, RCC_APB1ENR_LPTIM1EN) != RESET) {
@@ -135,6 +133,7 @@ void lp_ticker_init(void)
     }
 
     NVIC_SetVector(LPTIM1_IRQn, (uint32_t)LPTIM1_IRQHandler);
+    NVIC_EnableIRQ(LPTIM1_IRQn);
 
 #if !(TARGET_STM32L4)
     /* EXTI lines are not configured by default */
@@ -178,12 +177,16 @@ static void LPTIM1_IRQHandler(void)
 
 uint32_t lp_ticker_read(void)
 {
+    lp_ticker_init();
     uint32_t lp_time = LPTIM1->CNT;
     return lp_time;     
 }
 
 void lp_ticker_set_interrupt(timestamp_t timestamp)
 {
+    // Disable IRQs
+    core_util_critical_section_enter();
+
     LptimHandle.Instance = LPTIM1;
     irq_handler = (void (*)(void))lp_ticker_irq_handler;
 
@@ -196,14 +199,14 @@ void lp_ticker_set_interrupt(timestamp_t timestamp)
     __HAL_LPTIM_CLEAR_FLAG(&LptimHandle, LPTIM_FLAG_CMPM);
     __HAL_LPTIM_COMPARE_SET(&LptimHandle, timestamp);
 
-    NVIC_EnableIRQ(LPTIM1_IRQn);
+    // Enable IRQs
+    core_util_critical_section_exit();
 }
 
 void lp_ticker_fire_interrupt(void)
 {
     lp_Fired = 1;
     NVIC_SetPendingIRQ(LPTIM1_IRQn);
-    NVIC_EnableIRQ(LPTIM1_IRQn);
 }
 
 void lp_ticker_disable_interrupt(void)
