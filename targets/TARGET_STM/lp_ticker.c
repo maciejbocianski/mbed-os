@@ -38,12 +38,20 @@ LPTIM_HandleTypeDef LptimHandle;
 
 volatile uint32_t lp_SlaveCounter = 0;
 volatile uint32_t lp_oc_int_part = 0;
-volatile uint16_t lp_TickPeriod_us;
 volatile uint8_t  lp_Fired = 0;
 
 static void LPTIM1_IRQHandler(void);
 static void (*irq_handler)(void);
 
+
+const ticker_info_t* lp_ticker_get_info()
+{
+    static const ticker_info_t info = {
+        RTC_CLOCK/2,
+        16
+    };
+    return &info;
+}
 
 void lp_ticker_init(void)
 {
@@ -125,7 +133,6 @@ void lp_ticker_init(void)
                 Prescaler = LPTIM_PRESCALER_DIV128 => lp_TickPeriod_us = 3.9ms => 256s with 16b timer
     */
     LptimHandle.Init.Clock.Prescaler = LPTIM_PRESCALER_DIV2;
-    lp_TickPeriod_us = 2 * 1000000 / RTC_CLOCK;
 
     LptimHandle.Init.Trigger.Source = LPTIM_TRIGSOURCE_SOFTWARE;
     LptimHandle.Init.OutputPolarity = LPTIM_OUTPUTPOLARITY_HIGH;
@@ -173,13 +180,13 @@ static void LPTIM1_IRQHandler(void)
             /* Clear Compare match flag */
             __HAL_LPTIM_CLEAR_FLAG(&LptimHandle, LPTIM_FLAG_CMPM);
 
-            if (lp_oc_int_part > 0) {
-                lp_oc_int_part--;
-            } else {
+//            if (lp_oc_int_part > 0) {
+//                lp_oc_int_part--;
+//            } else {
                 if (irq_handler) {
                     irq_handler();
                 }
-            }
+//            }
         }
     }
 
@@ -231,7 +238,8 @@ uint32_t lp_ticker_read_TickCounter(void)
 uint32_t lp_ticker_read(void)
 {
     lp_ticker_init();
-    return lp_ticker_read_TickCounter() * (uint32_t)lp_TickPeriod_us;
+    uint32_t lp_time = LPTIM1->CNT;
+    return lp_time;
 }
 
 volatile timestamp_t mboc_timestamp = 0;
@@ -245,7 +253,7 @@ void lp_ticker_set_interrupt(timestamp_t timestamp)
     // Disable IRQs
     core_util_critical_section_enter();
 
-    uint32_t timestamp_TickCounter = timestamp / (uint32_t)lp_TickPeriod_us;
+    //uint32_t timestamp_TickCounter = timestamp / (uint32_t)lp_TickPeriod_us;
 
     LptimHandle.Instance = LPTIM1;
     irq_handler = (void (*)(void))lp_ticker_irq_handler;
@@ -254,12 +262,12 @@ void lp_ticker_set_interrupt(timestamp_t timestamp)
 
     __HAL_LPTIM_CLEAR_FLAG(&LptimHandle, LPTIM_FLAG_CMPOK);
     __HAL_LPTIM_CLEAR_FLAG(&LptimHandle, LPTIM_FLAG_CMPM);
-    __HAL_LPTIM_COMPARE_SET(&LptimHandle, timestamp_TickCounter & 0xFFFF);
+    __HAL_LPTIM_COMPARE_SET(&LptimHandle, timestamp & 0xFFFF);
 
 
     mboc_timestamp = timestamp;
-    mboc_lp_TickPeriod_us = lp_TickPeriod_us;
-    mboc_timestamp_TickCounter = timestamp_TickCounter;
+    mboc_lp_TickPeriod_us = 61;
+    mboc_timestamp_TickCounter = timestamp;
     /* CMPOK is set by hardware to inform application that the APB bus write operation to the LPTIM_CMP register has been successfully completed */
     while (__HAL_LPTIM_GET_FLAG(&LptimHandle, LPTIM_FLAG_CMPOK) == RESET) {
     }
@@ -267,12 +275,12 @@ void lp_ticker_set_interrupt(timestamp_t timestamp)
     /* same algo as us_ticker_set_interrupt in us_ticker_16b.c */
     uint32_t current_time_TickCounter = lp_ticker_read_TickCounter();
     mboc_read2 = current_time_TickCounter;
-    uint32_t delta = timestamp_TickCounter - current_time_TickCounter;
-    lp_oc_int_part = (delta - 1) >> 16;
-    if ( ((delta - 1) & 0xFFFF) >= 0x8000 &&
-            __HAL_LPTIM_GET_FLAG(&LptimHandle, LPTIM_FLAG_CMPM) == SET ) {
-        ++lp_oc_int_part;
-    }
+//    uint32_t delta = timestamp - current_time_TickCounter;
+//    lp_oc_int_part = (delta - 1) >> 16;
+//    if ( ((delta - 1) & 0xFFFF) >= 0x8000 &&
+//            __HAL_LPTIM_GET_FLAG(&LptimHandle, LPTIM_FLAG_CMPM) == SET ) {
+//        ++lp_oc_int_part;
+//    }
 
     // Enable IRQs
     core_util_critical_section_exit();

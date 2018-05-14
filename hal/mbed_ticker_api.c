@@ -163,6 +163,9 @@ static timestamp_t compute_tick(const ticker_data_t *const ticker, us_timestamp_
     ticker_event_queue_t *queue = ticker->queue;
     us_timestamp_t delta_us = timestamp - queue->present_time;
 
+    //printf("[compute_tick] >>>\r\n");
+    //printf("[compute_tick] timestamp: %llu\r\n", timestamp);
+    //printf("[compute_tick] queue->frequency: %u\r\n", queue->frequency);
     timestamp_t delta = ticker->queue->max_delta;
     if (delta_us <=  ticker->queue->max_delta_us) {
         // Checking max_delta_us ensures the operation will not overflow
@@ -190,6 +193,9 @@ static timestamp_t compute_tick(const ticker_data_t *const ticker, us_timestamp_
             }
         }
     }
+    //printf("[compute_tick] queue->tick_last_read: %u delta: %u\r\n", queue->tick_last_read, delta);
+    //printf("[compute_tick] ret: %u\r\n", (queue->tick_last_read + delta) & queue->bitmask);
+    //printf("[compute_tick] <<<\r\n");
     return (queue->tick_last_read + delta) & queue->bitmask;
 }
 
