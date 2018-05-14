@@ -25,7 +25,7 @@
 
 using utest::v1::Case;
 
-static const int test_timeout = 10;
+static const int test_timeout = 60;
 
 #define TICKER_COUNT 16
 #define MULTI_TICKER_TIME_MS 100
@@ -73,16 +73,18 @@ void test_multi_ticker(void)
     LowPowerTicker ticker[TICKER_COUNT];
     const uint32_t extra_wait = 10; // extra 10ms wait time
 
-    multi_counter = 0;
-    for (int i = 0; i < TICKER_COUNT; i++) {
-        ticker[i].attach_us(callback(increment_multi_counter), MULTI_TICKER_TIME_MS * 1000);
-    }
+    while(true) {
+        multi_counter = 0;
+        for (int i = 0; i < TICKER_COUNT; i++) {
+            ticker[i].attach_us(callback(increment_multi_counter), MULTI_TICKER_TIME_MS * 1000);
+        }
 
-    Thread::wait(MULTI_TICKER_TIME_MS + extra_wait);
-    for (int i = 0; i < TICKER_COUNT; i++) {
-            ticker[i].detach();
+        Thread::wait(MULTI_TICKER_TIME_MS + extra_wait);
+        for (int i = 0; i < TICKER_COUNT; i++) {
+                ticker[i].detach();
+        }
+        TEST_ASSERT_EQUAL(TICKER_COUNT, multi_counter);
     }
-    TEST_ASSERT_EQUAL(TICKER_COUNT, multi_counter);
 
     multi_counter = 0;
     for (int i = 0; i < TICKER_COUNT; i++) {
