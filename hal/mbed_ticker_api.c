@@ -18,6 +18,7 @@
 #include "hal/ticker_api.h"
 #include "platform/mbed_critical.h"
 #include "mbed_assert.h"
+#include "platform/mbed_toolchain.h"
 
 static void schedule_interrupt(const ticker_data_t *const ticker);
 static void update_present_time(const ticker_data_t *const ticker);
@@ -391,12 +392,12 @@ void ticker_remove_event(const ticker_data_t *const ticker, ticker_event_t *obj)
     core_util_critical_section_exit();
 }
 
-timestamp_t ticker_read(const ticker_data_t *const ticker)
+WEAK timestamp_t ticker_read(const ticker_data_t *const ticker)
 {
     return ticker_read_us(ticker);
 }
 
-us_timestamp_t ticker_read_us(const ticker_data_t *const ticker)
+WEAK us_timestamp_t ticker_read_us(const ticker_data_t *const ticker)
 {
     initialize(ticker);
 

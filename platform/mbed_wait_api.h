@@ -81,6 +81,7 @@ void wait_ms(int ms);
  *    which potentially affects power (such as preventing deep sleep) and multithread performance.
  */
 void wait_us(int us);
+void wait_us64(int us);
 
 #ifdef __cplusplus
 }

@@ -45,7 +45,35 @@ void wait_us(int us) {
     }
     // Use busy waiting for sub-millisecond delays, or for the whole
     // interval if interrupts are not enabled
-    while ((ticker_read(ticker) - start) < (uint32_t)us);
+    printf("start: %10u \r\n", start);
+    uint32_t current;
+    do {
+        current = ticker_read(ticker);
+        uint32_t val = current - start;
+        printf("current: %10u  diff: %2u\r\n", current, val);
+    } while ((current - start) < (uint32_t)us);
+              //0 - max_int
+}
+
+void wait_us64(int us) {
+    const ticker_data_t *const ticker = get_us_ticker_data();
+
+    uint64_t start = ticker_read_us(ticker);
+    // Use the RTOS to wait for millisecond delays if possible
+    int ms = us / 1000;
+    if ((ms > 0) && core_util_are_interrupts_enabled()) {
+        sleep_manager_lock_deep_sleep();
+        Thread::wait((uint32_t)ms);
+        sleep_manager_unlock_deep_sleep();
+    }
+    // Use busy waiting for sub-millisecond delays, or for the whole
+    // interval if interrupts are not enabled
+    printf("start: %10llu \r\n", start);
+    uint64_t current;
+    do {
+        current = ticker_read_us(ticker);
+        printf("current: %10llu diff: %2llu\r\n", current, current - start);
+    } while ((current - start) < (uint64_t)us);
 }
 
 #endif // #if MBED_CONF_RTOS_PRESENT
