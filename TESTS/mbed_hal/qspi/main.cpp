@@ -13,6 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+#if !DEVICE_QSPI
+#error [NOT_SUPPORTED] QSPI not supported for this target
+#endif
+
 #include "utest/utest.h"
 #include "unity/unity.h"
 #include "greentea-client/test_env.h"
@@ -23,8 +28,8 @@
 #include "qspi_api.h"
 
 
-#if !DEVICE_QSPI || !defined(QSPI_FLASH_CHIP_STRING)
-#error [NOT_SUPPORTED] QSPI not supported for this target
+#if !defined(QSPI_FLASH_CHIP_STRING)
+#error [NOT_SUPPORTED] QSPI test not supported for this target
 #endif
 
 using namespace utest::v1;
@@ -242,10 +247,13 @@ void qspi_write_read_test(void)
     WAIT_FOR(WRSR_MAX_TIME, qspi);
 
 #ifdef QSPI_TEST_LOG_FLASH_STATUS
-    printf("Status ");   log_register(STATUS_REG, QSPI_STATUS_REG_SIZE, qspi);
-    printf("Config 0 "); log_register(CONFIG_REG0, QSPI_CONFIG_REG_0_SIZE, qspi);
+    printf("Status\r\n");   log_register(STATUS_REG, QSPI_STATUS_REG_SIZE, qspi);
+    printf("Config 0\r\n"); log_register(CONFIG_REG0, QSPI_CONFIG_REG_0_SIZE, qspi);
 #ifdef CONFIG_REG1
-    printf("Config 1 "); log_register(CONFIG_REG1, QSPI_CONFIG_REG_1_SIZE, qspi);
+    printf("Config 1\r\n"); log_register(CONFIG_REG1, QSPI_CONFIG_REG_1_SIZE, qspi);
+#endif
+#ifdef CONFIG_REG2
+    printf("Config 2\r\n"); log_register(CONFIG_REG2, QSPI_CONFIG_REG_2_SIZE, qspi);
 #endif
 #endif
 
@@ -273,9 +281,6 @@ void qspi_write_read_test(void)
 
     qspi_free(&qspi.handle);
 }
-
-
-
 
 
 void qspi_init_free_test(void)
@@ -309,10 +314,13 @@ void qspi_init_free_test(void)
     flash_init(qspi);
 
 #ifdef QSPI_TEST_LOG_FLASH_STATUS
-    printf("Status ");   log_register(STATUS_REG, QSPI_STATUS_REG_SIZE, qspi);
-    printf("Config 0 "); log_register(CONFIG_REG0, QSPI_CONFIG_REG_0_SIZE, qspi);
+    printf("Status\r\n");   log_register(STATUS_REG, QSPI_STATUS_REG_SIZE, qspi);
+    printf("Config 0\r\n"); log_register(CONFIG_REG0, QSPI_CONFIG_REG_0_SIZE, qspi);
 #ifdef CONFIG_REG1
-    printf("Config 1 "); log_register(CONFIG_REG1, QSPI_CONFIG_REG_1_SIZE, qspi);
+    printf("Config 1\r\n"); log_register(CONFIG_REG1, QSPI_CONFIG_REG_1_SIZE, qspi);
+#endif
+#ifdef CONFIG_REG2
+    printf("Config 2\r\n"); log_register(CONFIG_REG2, QSPI_CONFIG_REG_2_SIZE, qspi);
 #endif
 #endif
 

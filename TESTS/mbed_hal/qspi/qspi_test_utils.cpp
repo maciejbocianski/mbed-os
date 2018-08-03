@@ -73,6 +73,12 @@ qspi_status_t read_register(uint32_t cmd, uint8_t *buf, uint32_t size, Qspi &q)
     return qspi_command_transfer(&q.handle, q.cmd.get(), NULL, 0, buf, size);
 }
 
+qspi_status_t write_register(uint32_t cmd, uint8_t *buf, uint32_t size, Qspi &q)
+{
+    q.cmd.build(cmd);
+    return qspi_command_transfer(&q.handle, q.cmd.get(), buf, size, NULL, 0);
+}
+
 
 QspiStatus flash_wait_for(uint32_t time_us, Qspi &qspi)
 {
@@ -166,8 +172,8 @@ void log_register(uint32_t cmd, uint32_t reg_size, Qspi &qspi)
     ret = read_register(cmd, reg, reg_size, qspi);
     TEST_ASSERT_EQUAL(QSPI_STATUS_OK, ret);
 
-    for (int j = 0; j < reg_size; j++) {
-        printf("register byte %d data: ", j);
+    for (uint32_t j = 0; j < reg_size; j++) {
+        printf("register byte %u data: ", j);
         for(int i = 0; i < 8; i++) {
             printf("%s ", ((reg[j] & (1 << i)) & 0xFF) == 0 ? "0" : "1");
         }
