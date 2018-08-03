@@ -222,9 +222,6 @@ void qspi_write_read_test(void)
 
     if (is_dual_cmd(write_inst_width, write_addr_width, write_data_width) ||
         is_dual_cmd(read_inst_width, read_addr_width, read_data_width)) {
-        ret = write_enable(qspi);
-        TEST_ASSERT_EQUAL(QSPI_STATUS_OK, ret);
-        WAIT_FOR(WRSR_MAX_TIME, qspi);
         ret = dual_enable(qspi);
         TEST_ASSERT_EQUAL(QSPI_STATUS_OK, ret);
         WAIT_FOR(WRSR_MAX_TIME, qspi);
@@ -232,9 +229,6 @@ void qspi_write_read_test(void)
 
     if (is_quad_cmd(write_inst_width, write_addr_width, write_data_width) ||
         is_quad_cmd(read_inst_width, read_addr_width, read_data_width)) {
-        ret = write_enable(qspi);
-        TEST_ASSERT_EQUAL(QSPI_STATUS_OK, ret);
-        WAIT_FOR(WRSR_MAX_TIME, qspi);
         ret = quad_enable(qspi);
         TEST_ASSERT_EQUAL(QSPI_STATUS_OK, ret);
         WAIT_FOR(WRSR_MAX_TIME, qspi);
@@ -265,9 +259,6 @@ void qspi_write_read_test(void)
 
     if (is_dual_cmd(write_inst_width, write_addr_width, write_data_width) ||
         is_dual_cmd(read_inst_width, read_addr_width, read_data_width)) {
-        ret = write_enable(qspi);
-        TEST_ASSERT_EQUAL(QSPI_STATUS_OK, ret);
-        WAIT_FOR(WRSR_MAX_TIME, qspi);
         ret = dual_disable(qspi);
         TEST_ASSERT_EQUAL(QSPI_STATUS_OK, ret);
         WAIT_FOR(WRSR_MAX_TIME, qspi);
@@ -275,9 +266,6 @@ void qspi_write_read_test(void)
 
     if (is_quad_cmd(write_inst_width, write_addr_width, write_data_width) ||
         is_quad_cmd(read_inst_width, read_addr_width, read_data_width)) {
-        ret = write_enable(qspi);
-        TEST_ASSERT_EQUAL(QSPI_STATUS_OK, ret);
-        WAIT_FOR(WRSR_MAX_TIME, qspi);
         ret = quad_disable(qspi);
         TEST_ASSERT_EQUAL(QSPI_STATUS_OK, ret);
         WAIT_FOR(WRSR_MAX_TIME, qspi);

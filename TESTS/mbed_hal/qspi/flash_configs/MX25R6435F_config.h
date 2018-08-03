@@ -112,6 +112,11 @@
                                                                             \
     uint8_t reg_data[QSPI_STATUS_REG_SIZE];                                 \
                                                                             \
+    if (write_enable(qspi) != QSPI_STATUS_OK) {                             \
+        return QSPI_STATUS_ERROR;                                           \
+    }                                                                       \
+    WAIT_FOR(WRSR_MAX_TIME, qspi);                                          \
+                                                                            \
     reg_data[0] = STATUS_BIT_QE;                                            \
     qspi.cmd.build(QSPI_CMD_WRSR);                                          \
                                                                             \
@@ -135,6 +140,11 @@
 #define QUAD_DISABLE_IMPLEMENTATION()                                       \
                                                                             \
     uint8_t reg_data[QSPI_STATUS_REG_SIZE];                                 \
+                                                                            \
+    if (write_enable(qspi) != QSPI_STATUS_OK) {                             \
+        return QSPI_STATUS_ERROR;                                           \
+    }                                                                       \
+    WAIT_FOR(WRSR_MAX_TIME, qspi);                                          \
                                                                             \
     reg_data[0] = 0;                                                        \
     qspi.cmd.build(QSPI_CMD_WRSR);                                          \
