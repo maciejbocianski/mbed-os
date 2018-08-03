@@ -167,8 +167,23 @@
         return QSPI_STATUS_ERROR;                                               \
     }                                                                           \
     WAIT_FOR(WRSR_MAX_TIME, qspi);                                              \
+    for (uint32_t j = 0; j < QSPI_CONFIG_REG_2_SIZE; j++) {\
+        printf(">>> register byte %u data: ", j);\
+        for(int i = 0; i < 8; i++) {\
+            printf("%s ", ((reg_data[j] & (1 << i)) & 0xFF) == 0 ? "0" : "1");\
+        }\
+        printf("\r\n");\
+    }\
                                                                                 \
     reg_data[0] = reg_data[0] & ~(CONFIG2_BIT_DE);                              \
+    for (uint32_t j = 0; j < QSPI_CONFIG_REG_2_SIZE; j++) {\
+        printf(">>> register byte %u data: ", j);\
+        for(int i = 0; i < 8; i++) {\
+            printf("%s ", ((reg_data[j] & (1 << i)) & 0xFF) == 0 ? "0" : "1");\
+        }\
+        printf("\r\n");\
+    }\
+    return QSPI_STATUS_OK; \
     if (write_register(QSPI_CMD_WRCR2, reg_data,                                \
             QSPI_CONFIG_REG_2_SIZE, qspi) != QSPI_STATUS_OK) {                  \
         return QSPI_STATUS_ERROR;                                               \
@@ -187,7 +202,7 @@
 #define DUAL_DISABLE_IMPLEMENTATION()                                           \
                                                                                 \
     uint8_t reg_data[QSPI_CONFIG_REG_2_SIZE];                                   \
-                                                                                \
+    return QSPI_STATUS_OK; \
     memset(reg_data, 0, QSPI_CONFIG_REG_2_SIZE);                                \
     if (read_register(QSPI_CMD_RDCR2, reg_data,                                 \
             QSPI_CONFIG_REG_2_SIZE, qspi) != QSPI_STATUS_OK) {                  \

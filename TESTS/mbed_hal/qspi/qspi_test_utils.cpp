@@ -173,7 +173,7 @@ void log_register(uint32_t cmd, uint32_t reg_size, Qspi &qspi)
     TEST_ASSERT_EQUAL(QSPI_STATUS_OK, ret);
 
     for (uint32_t j = 0; j < reg_size; j++) {
-        printf("register byte %u data: ", j);
+        printf("register byte %lu data: ", j);
         for(int i = 0; i < 8; i++) {
             printf("%s ", ((reg[j] & (1 << i)) & 0xFF) == 0 ? "0" : "1");
         }
