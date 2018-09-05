@@ -35,7 +35,8 @@ I2C::I2C(PinName sda, PinName scl) :
     // No lock needed in the constructor
 
     // The init function also set the frequency to 100000
-    i2c_init(&_i2c, sda, scl);
+    i2c_init(&_i2c, sda, scl, false);
+    i2c_frequency(&_i2c, _hz);
 
     // Used to avoid unnecessary frequency updates
     _owner = this;
@@ -44,7 +45,7 @@ I2C::I2C(PinName sda, PinName scl) :
 void I2C::frequency(int hz)
 {
     lock();
-    _hz = hz;
+    _hz = (uint32_t)hz;
 
     // We want to update the frequency even if we are already the bus owners
     i2c_frequency(&_i2c, _hz);
@@ -71,7 +72,7 @@ int I2C::write(int address, const char *data, int length, bool repeated)
     aquire();
 
     int stop = (repeated) ? 0 : 1;
-    int written = i2c_write(&_i2c, address, data, length, stop);
+    int written = i2c_write(&_i2c, address, (void*)data, length, stop);
 
     unlock();
     return length != written;
@@ -80,7 +81,7 @@ int I2C::write(int address, const char *data, int length, bool repeated)
 int I2C::write(int data)
 {
     lock();
-    int ret = i2c_byte_write(&_i2c, data);
+    int ret = i2c_write(&_i2c, 0, (void *)&data, 1, false);
     unlock();
     return ret;
 }
@@ -102,11 +103,7 @@ int I2C::read(int ack)
 {
     lock();
     int ret;
-    if (ack) {
-        ret = i2c_byte_read(&_i2c, 0);
-    } else {
-        ret = i2c_byte_read(&_i2c, 1);
-    }
+    i2c_read(&_i2c, 0, &ret, 1, (ack == 0));
     unlock();
     return ret;
 }

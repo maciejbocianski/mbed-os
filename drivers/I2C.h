@@ -197,7 +197,7 @@ protected:
 
     i2c_t _i2c;
     static I2C  *_owner;
-    int         _hz;
+    uint32_t         _hz;
     static SingletonPtr<PlatformMutex> _mutex;
 };
 

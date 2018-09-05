@@ -148,6 +148,8 @@ public:
     void stop(void);
 
 protected:
+    PinName _sda;
+    PinName _scl;
     i2c_t _i2c;
 };
 
