@@ -186,24 +186,84 @@ static int i2c_byte_read(i2c_t *obj, void *data, uint32_t length, bool last)
   return length;
 }
 
+#if DEVICE_I2CSLAVE
+
+int i2c_slave_read(i2c_t *obj, void *data, uint32_t length)
+{
+  I2C_Type *base = i2c_addrs[obj->instance];
+
+  if (base->S & kI2C_AddressMatchFlag)
+  {
+    /* Slave receive, master writing to slave. */
+    base->C1 &= ~(I2C_C1_TX_MASK | I2C_C1_TXAK_MASK);
+    /* Read dummy to release the bus. */
+    base->D;
+  }
+
+  I2C_SlaveReadBlocking(base, (uint8_t *)data, length);
+
+  return length;
+}
+
+i2c_slave_status i2c_slave_receive(i2c_t *obj)
+{
+  uint32_t status_flags = I2C_SlaveGetStatusFlags(i2c_addrs[obj->instance]);
+
+  if (status_flags & kI2C_AddressMatchFlag)
+  {
+    if (status_flags & kI2C_TransferDirectionFlag)
+    {
+      // read addressed
+      return READ;
+    }
+    else
+    {
+      // write addressed
+      return WRITE;
+    }
+  }
+  else
+  {
+    // slave not addressed
+    return NOT_ADDRESSED;
+  }
+}
+
+int i2c_slave_write(i2c_t *obj, const void *data, uint32_t length)
+{
+  I2C_Type *base = i2c_addrs[obj->instance];
+
+  I2C_SlaveWriteBlocking(base, (uint8_t *)data, length);
+
+  /* Switch to receive mode. */
+  base->C1 &= ~(I2C_C1_TX_MASK | I2C_C1_TXAK_MASK);
+  /* Read dummy to release bus. */
+  base->D;
+
+  return length;
+}
+
+void i2c_slave_address(i2c_t *obj, uint16_t address)
+{
+  i2c_addrs[obj->instance]->A1 = address & 0xfe;
+}
+#endif // DEVICE_I2CSLAVE
+
 int i2c_read(i2c_t *obj, uint16_t address, void *data, uint32_t length, bool last)
 {
   if ((length == 0) || (data == NULL))
     return 0;
 
-  if (obj->is_slave)
-  {
-    MBED_ASSERT(true && "I2C Slave unimplemented");
+  if (obj->is_slave) {
+#ifdef DEVICE_I2CSLAVE
+    return i2c_slave_read(obj, data, length);
+#else
     return 0;
-  }
-  else
-  {
-    if (length == 1)
-    {
+#endif
+  } else {
+    if (length == 1) {
       return i2c_byte_read(obj, data, length, last);
-    }
-    else
-    {
+    } else {
       return i2c_block_read(obj, address, data, length, last);
     }
   }
@@ -292,16 +352,17 @@ int i2c_block_write(i2c_t *obj, uint16_t address, const void *data, uint32_t len
   return length;
 }
 
-
 int i2c_write(i2c_t *obj, uint16_t address, const void *data, uint32_t length, bool stop)
 {
   if ((length == 0) || (data == NULL))
     return 0;
 
-  if (obj->is_slave)
-  {
-    MBED_ASSERT(true && "I2C Slave unimplemented");
+  if (obj->is_slave)  {
+#ifdef DEVICE_I2CSLAVE
+    return i2c_slave_write(obj, data, length);
+#else
     return 0;
+#endif // DEVICE_I2CSLAVE
   }
   else
   {
@@ -315,60 +376,5 @@ int i2c_write(i2c_t *obj, uint16_t address, const void *data, uint32_t length, b
     }
   }
 }
-
-#if DEVICE_I2CSLAVE
-int i2c_slave_receive(i2c_t *obj)
-{
-  uint32_t status_flags = I2C_SlaveGetStatusFlags(i2c_addrs[obj->instance]);
-
-  if (status_flags & kI2C_AddressMatchFlag) {
-    if (status_flags & kI2C_TransferDirectionFlag) {
-      // read addressed
-      return 1;
-    } else {
-      // write addressed
-      return 3;
-    }
-  } else {
-    // slave not addressed
-    return 0;
-  }
-}
-
-int i2c_slave_read(i2c_t *obj, char *data, int length)
-{
-  I2C_Type *base = i2c_addrs[obj->instance];
-
-  if (base->S & kI2C_AddressMatchFlag) {
-    /* Slave receive, master writing to slave. */
-    base->C1 &= ~(I2C_C1_TX_MASK | I2C_C1_TXAK_MASK);
-    /* Read dummy to release the bus. */
-    base->D;
-  }
-
-  I2C_SlaveReadBlocking(base, (uint8_t *)data, length);
-
-  return length;
-}
-
-int i2c_slave_write(i2c_t *obj, const char *data, int length)
-{
-  I2C_Type *base = i2c_addrs[obj->instance];
-
-  I2C_SlaveWriteBlocking(base, (uint8_t *)data, length);
-
-  /* Switch to receive mode. */
-  base->C1 &= ~(I2C_C1_TX_MASK | I2C_C1_TXAK_MASK);
-  /* Read dummy to release bus. */
-  base->D;
-
-  return length;
-}
-
-void i2c_slave_address(i2c_t *obj, uint16_t address)
-{
-  i2c_addrs[obj->instance]->A1 = address & 0xfe;
-}
-#endif
 
 #endif

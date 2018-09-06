@@ -186,6 +186,13 @@ int i2c_write(i2c_t *obj, uint16_t address, const void *data, uint32_t length,
  * @{
  */
 
+typedef enum {
+    NOT_ADDRESSED = 0,
+    READ = 1,
+    BROADCAST = 2,
+    WRITE = 3
+} i2c_slave_status;
+
 /** Check to see if the I2C slave has been addressed.
  *  @param obj The I2C object
  *  @return The status - i2c_slave_status indicating what mode the peripheral is
