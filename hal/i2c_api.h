@@ -64,6 +64,19 @@ enum {
     I2C_ERROR_BUS_BUSY = -2
 };
 
+typedef struct {
+    /**< Minimum frequency supported must be set by target device */
+    uint32_t minimum_frequency;
+    /**< Maximum frequency supported must be set by target device */
+    uint32_t maximum_frequency;
+	  /**< If true, the device can handle I2C slave mode. */
+    bool supports_slave_mode;
+    /**< If true, supports 10-bit addressing. */
+    bool supports_10bit_addressing;
+    /**< If true, the device handle multimaster collisions and arbitration safely*/
+    bool supports_multi_master;
+} i2c_capabilities_t;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -72,6 +85,14 @@ extern "C" {
  * \defgroup hal_GeneralI2C I2C Configuration Functions
  * @{
  */
+
+/** Fills structure indicating supported features and frequencies on the current
+ *  platform
+ *
+ * @param[out] capabilities  Capabilities structure filled with supported
+ *                           configurations.
+ */
+void i2c_get_capabilities(i2c_capabilities_t *capabilities);
 
 /** Initialize the I2C peripheral. It sets the default parameters for I2C
  *  peripheral, and configures its pins.
