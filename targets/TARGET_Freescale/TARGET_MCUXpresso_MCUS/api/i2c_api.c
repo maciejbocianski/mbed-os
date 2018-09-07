@@ -83,6 +83,17 @@ void i2c_init(i2c_t *obj, PinName sda, PinName scl, bool is_slave)
 #endif
 }
 
+void i2c_free(i2c_t *obj)
+{
+  I2C_Type *base = i2c_addrs[obj->instance];
+
+  if (obj->is_slave) {
+    I2C_SlaveDeinit(base);
+  } else {
+    I2C_MasterDeinit(base);
+  }
+}
+
 bool i2c_start(i2c_t *obj)
 {
   I2C_Type *base = i2c_addrs[obj->instance];

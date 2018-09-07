@@ -153,7 +153,7 @@ public:
 
     virtual ~I2C()
     {
-        // Do nothing
+        i2c_free(&_i2c);
     }
 
 #if DEVICE_I2C_ASYNCH
