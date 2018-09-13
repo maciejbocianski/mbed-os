@@ -237,11 +237,10 @@ typedef void (*i2c_async_handler_f)(i2c_t *obj, void *ctx,
  *  @param address   The address to be set - 7bit or 9bit
  *  @param stop      If true, stop will be generated after the transfer is done
  *  @param handler   The I2C IRQ handler to be set
- *  @param hint      DMA hint usage
  */
 void i2c_transfer_async(i2c_t *obj, const void *tx, uint32_t tx_length,
                         void *rx, uint32_t rx_length, uint16_t address,
-                        bool stop, i2c_async_handler_f handler, DMAUsage hint);
+                        bool stop, i2c_async_handler_f handler);
 
 /** Abort asynchronous transfer
  *

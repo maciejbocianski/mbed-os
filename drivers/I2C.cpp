@@ -28,7 +28,7 @@ SingletonPtr<PlatformMutex> I2C::_mutex;
 
 I2C::I2C(PinName sda, PinName scl) :
 #if DEVICE_I2C_ASYNCH
-    _irq(this), _usage(DMA_USAGE_NEVER), _deep_sleep_locked(false),
+    _irq(this), _deep_sleep_locked(false),
 #endif
     _i2c(), _hz(100000)
 {
