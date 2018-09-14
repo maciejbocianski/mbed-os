@@ -32,6 +32,19 @@ static I2C_Type *const i2c_addrs[] = I2C_BASE_PTRS;
 /* Array of I2C bus clock frequencies */
 static clock_name_t const i2c_clocks[] = I2C_CLOCK_FREQS;
 
+void i2c_get_capabilities(i2c_capabilities_t *capabilities)
+{
+  if (capabilities == NULL) {
+      return;
+  }
+
+  capabilities->minimum_frequency = 1;
+  capabilities->maximum_frequency = 1000000;
+  capabilities->supports_slave_mode = true;
+  capabilities->supports_10bit_addressing = true;
+  capabilities->supports_multi_master = true;
+}
+
 void i2c_init(i2c_t *obj, PinName sda, PinName scl, bool is_slave)
 {
   uint32_t i2c_sda = pinmap_peripheral(sda, PinMap_I2C_SDA);
