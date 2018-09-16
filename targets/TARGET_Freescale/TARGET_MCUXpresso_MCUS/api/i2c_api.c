@@ -25,8 +25,6 @@
 #include "peripheral_clock_defines.h"
 #include "PeripheralPins.h"
 
-/* 7 bit IIC addr - R/W flag not included */
-static int i2c_address = 0;
 /* Array of I2C peripheral base address. */
 static I2C_Type *const i2c_addrs[] = I2C_BASE_PTRS;
 /* Array of I2C bus clock frequencies */
@@ -35,7 +33,7 @@ static clock_name_t const i2c_clocks[] = I2C_CLOCK_FREQS;
 void i2c_get_capabilities(i2c_capabilities_t *capabilities)
 {
   if (capabilities == NULL) {
-      return;
+    return;
   }
 
   capabilities->minimum_frequency = 1;
@@ -49,6 +47,7 @@ void i2c_init(i2c_t *obj, PinName sda, PinName scl, bool is_slave)
 {
   uint32_t i2c_sda = pinmap_peripheral(sda, PinMap_I2C_SDA);
   uint32_t i2c_scl = pinmap_peripheral(scl, PinMap_I2C_SCL);
+
   PORT_Type *port_addrs[] = PORT_BASE_PTRS;
   PORT_Type *base = port_addrs[sda >> GPIO_PORT_SHIFT];
 
@@ -58,41 +57,40 @@ void i2c_init(i2c_t *obj, PinName sda, PinName scl, bool is_slave)
 
   MBED_ASSERT((int)obj->instance != NC);
 
-  if (is_slave)
-  {
+  const uint32_t clock_frequency = CLOCK_GetFreq(i2c_clocks[obj->instance]);
+
+  if (is_slave) {
     i2c_slave_config_t slave_config;
 
     I2C_SlaveGetDefaultConfig(&slave_config);
     slave_config.slaveAddress = 0;
-    slave_config.enableSlave = (bool)is_slave;
+    slave_config.enableSlave  = true;
 
 #if FSL_I2C_DRIVER_VERSION > MAKE_VERSION(2, 0, 1)
-    I2C_SlaveInit(i2c_addrs[obj->instance], &slave_config,
-                  CLOCK_GetFreq(i2c_clocks[obj->instance]));
+    I2C_SlaveInit(i2c_addrs[obj->instance], &slave_config, clock_frequency);
 #else
     I2C_SlaveInit(i2c_addrs[obj->instance], &slave_config);
 #endif
-  }
-  else
-  {
+  } else {
     i2c_master_config_t master_config;
 
     I2C_MasterGetDefaultConfig(&master_config);
-    I2C_MasterInit(i2c_addrs[obj->instance], &master_config,
-                   CLOCK_GetFreq(i2c_clocks[obj->instance]));
+    master_config.enableMaster = true;
+
+    I2C_MasterInit(i2c_addrs[obj->instance], &master_config, clock_frequency);
     I2C_EnableInterrupts(i2c_addrs[obj->instance], kI2C_GlobalInterruptEnable);
   }
 
   pinmap_pinout(sda, PinMap_I2C_SDA);
   pinmap_pinout(scl, PinMap_I2C_SCL);
 
-  /* Enable internal pullup resistor */
-  base->PCR[sda & 0xFF] |= (PORT_PCR_PE_MASK | PORT_PCR_PS_MASK);
-  base->PCR[scl & 0xFF] |= (PORT_PCR_PE_MASK | PORT_PCR_PS_MASK);
-
 #if defined(FSL_FEATURE_PORT_HAS_OPEN_DRAIN) && FSL_FEATURE_PORT_HAS_OPEN_DRAIN
   base->PCR[sda & 0xFF] |= PORT_PCR_ODE_MASK;
   base->PCR[scl & 0xFF] |= PORT_PCR_ODE_MASK;
+#else
+  /* Enable internal pullup resistor */
+  base->PCR[sda & 0xFF] |= (PORT_PCR_PE_MASK | PORT_PCR_PS_MASK);
+  base->PCR[scl & 0xFF] |= (PORT_PCR_PE_MASK | PORT_PCR_PS_MASK);
 #endif
 }
 
@@ -111,10 +109,10 @@ bool i2c_start(i2c_t *obj)
 {
   I2C_Type *base = i2c_addrs[obj->instance];
 
-  uint32_t statusFlags = I2C_MasterGetStatusFlags(base);
+  const uint32_t statusFlags = I2C_MasterGetStatusFlags(base);
 
   /* Check if the bus is already in use. */
-  if (statusFlags & kI2C_BusBusyFlag) {
+  if ((statusFlags & kI2C_BusBusyFlag) != 0) {
     /* Send a repeat START signal. */
     base->C1 |= I2C_C1_RSTA_MASK;
   } else {
@@ -133,15 +131,18 @@ bool i2c_start(i2c_t *obj)
 
 bool i2c_stop(i2c_t *obj)
 {
-  return (I2C_MasterStop(i2c_addrs[obj->instance]) != kStatus_Success) ? true : false;
+  I2C_Type *base = i2c_addrs[obj->instance];
+
+  return ((I2C_MasterStop(base)) != kStatus_Success) ? true : false;
 }
 
 void i2c_frequency(i2c_t *obj, uint32_t frequency)
 {
-  uint32_t busClock;
+  I2C_Type *base = i2c_addrs[obj->instance];
 
-  busClock = CLOCK_GetFreq(i2c_clocks[obj->instance]);
-  I2C_MasterSetBaudRate(i2c_addrs[obj->instance], frequency, busClock);
+  const uint32_t busClock = CLOCK_GetFreq(i2c_clocks[obj->instance]);
+
+  I2C_MasterSetBaudRate(base, frequency, busClock);
 }
 
 void i2c_timeout(i2c_t *obj, uint32_t timeout)
@@ -154,15 +155,12 @@ static int i2c_block_read(i2c_t *obj, uint16_t address, void *data, uint32_t len
 {
   I2C_Type *base = i2c_addrs[obj->instance];
 
-  // Master block transfer.
-  i2c_address = (address >> 1);
-
   i2c_master_transfer_t transfer;
   memset(&transfer, 0, sizeof(transfer));
-  transfer.slaveAddress = address >> 1;
-  transfer.direction = kI2C_Read;
-  transfer.data = (uint8_t *)data;
-  transfer.dataSize = length;
+  transfer.slaveAddress = (address >> 1);
+  transfer.direction    = kI2C_Read;
+  transfer.data         = (uint8_t *)data;
+  transfer.dataSize     = length;
 
   if (obj->next_repeated_start)
     transfer.flags |= kI2C_TransferRepeatedStartFlag;
@@ -190,9 +188,7 @@ static int i2c_byte_read(i2c_t *obj, void *data, uint32_t length, bool last)
   base->C1 &= ~(I2C_C1_TX_MASK | I2C_C1_TXAK_MASK);
 
   if (last)
-  {
     base->C1 |= I2C_C1_TXAK_MASK; // NACK
-  }
 
   *(char*)data = (base->D & 0xFF);
 
@@ -216,8 +212,7 @@ int i2c_slave_read(i2c_t *obj, void *data, uint32_t length)
 {
   I2C_Type *base = i2c_addrs[obj->instance];
 
-  if (base->S & kI2C_AddressMatchFlag)
-  {
+  if (base->S & kI2C_AddressMatchFlag) {
     /* Slave receive, master writing to slave. */
     base->C1 &= ~(I2C_C1_TX_MASK | I2C_C1_TXAK_MASK);
     /* Read dummy to release the bus. */
@@ -233,24 +228,11 @@ i2c_slave_status i2c_slave_receive(i2c_t *obj)
 {
   uint32_t status_flags = I2C_SlaveGetStatusFlags(i2c_addrs[obj->instance]);
 
-  if (status_flags & kI2C_AddressMatchFlag)
-  {
-    if (status_flags & kI2C_TransferDirectionFlag)
-    {
-      // read addressed
-      return READ;
-    }
-    else
-    {
-      // write addressed
-      return WRITE;
-    }
-  }
-  else
-  {
-    // slave not addressed
+  if ((status_flags & kI2C_AddressMatchFlag) == 0) {
     return NOT_ADDRESSED;
   }
+
+  return ((status_flags & kI2C_TransferDirectionFlag) != 0) ? READ : WRITE;
 }
 
 int i2c_slave_write(i2c_t *obj, const void *data, uint32_t length)
@@ -275,22 +257,22 @@ void i2c_slave_address(i2c_t *obj, uint16_t address)
 
 int i2c_read(i2c_t *obj, uint16_t address, void *data, uint32_t length, bool last)
 {
-  if ((length == 0) || (data == NULL))
+  if ((length == 0) || (data == NULL)) {
     return 0;
-
-  if (obj->is_slave) {
-#ifdef DEVICE_I2CSLAVE
-    return i2c_slave_read(obj, data, length);
-#else
-    return 0;
-#endif
-  } else {
-    if (length == 1) {
-      return i2c_byte_read(obj, data, length, last);
-    } else {
-      return i2c_block_read(obj, address, data, length, last);
-    }
   }
+
+  /* Slave block read */
+  if (obj->is_slave) {
+    return i2c_slave_read(obj, data, length);
+  }
+
+  /* Master byte read */
+  if (length == 1) {
+    return i2c_byte_read(obj, data, length, last);
+  }
+
+  /* Master block read */
+  return i2c_block_read(obj, address, data, length, last);
 }
 
 static int i2c_byte_write(i2c_t *obj, char data, bool stop)
@@ -298,7 +280,6 @@ static int i2c_byte_write(i2c_t *obj, char data, bool stop)
   I2C_Type *base = i2c_addrs[obj->instance];
 
   int ret_value = 1;
-  uint8_t statusFlags = 0;
 
   /* Setup the I2C peripheral to transmit data. */
   base->C1 |= I2C_C1_TX_MASK;
@@ -310,7 +291,7 @@ static int i2c_byte_write(i2c_t *obj, char data, bool stop)
   while (!(base->S & kI2C_IntPendingFlag)) {
   }
 
-  statusFlags = base->S;
+  const uint8_t statusFlags = base->S;
 
   /* Clear the IICIF flag. */
   base->S = kI2C_IntPendingFlag;
@@ -360,12 +341,15 @@ int i2c_block_write(i2c_t *obj, uint16_t address, const void *data, uint32_t len
   master_xfer.direction = kI2C_Write;
   master_xfer.data = (uint8_t *)data;
   master_xfer.dataSize = length;
+
   if (obj->next_repeated_start) {
     master_xfer.flags |= kI2C_TransferRepeatedStartFlag;
   }
+
   if (!stop) {
     master_xfer.flags |= kI2C_TransferNoStopFlag;
   }
+
   obj->next_repeated_start =
       master_xfer.flags & kI2C_TransferNoStopFlag ? 1 : 0;
 
@@ -378,27 +362,22 @@ int i2c_block_write(i2c_t *obj, uint16_t address, const void *data, uint32_t len
 
 int i2c_write(i2c_t *obj, uint16_t address, const void *data, uint32_t length, bool stop)
 {
-  if ((length == 0) || (data == NULL))
+  if ((length == 0) || (data == NULL)) {
     return 0;
+  }
 
-  if (obj->is_slave)  {
-#ifdef DEVICE_I2CSLAVE
+  /* Slave block write */
+  if (obj->is_slave) {
     return i2c_slave_write(obj, data, length);
-#else
-    return 0;
-#endif // DEVICE_I2CSLAVE
   }
-  else
-  {
-    if (length == 1)
-    {
-      return i2c_byte_write(obj, *(char*)data, stop);
-    }
-    else
-    {
-      return i2c_block_write(obj, address, data, length, stop);
-    }
+
+  /* Master byte write */
+  if (length == 1) {
+    return i2c_byte_write(obj, *(char*)data, stop);
   }
+
+  /* Master block write */
+  return i2c_block_write(obj, address, data, length, stop);
 }
 
 #endif
