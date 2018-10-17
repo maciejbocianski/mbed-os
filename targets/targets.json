@@ -801,7 +801,7 @@
                 "macro_name": "LPTICKER_DELAY_TICKS"
              }
         },
-        "device_has": ["USTICKER", "LPTICKER", "RTC", "ANALOGIN", "INTERRUPTIN", "PORTIN", "PORTINOUT", "PORTOUT", "PWMOUT", "SERIAL", "SLEEP", "SPI", "SPISLAVE", "SPI_ASYNCH", "STDIO_MESSAGES", "I2C", "I2CSLAVE"]
+        "device_has": ["USTICKER", "LPTICKER", "RTC", "ANALOGIN", "INTERRUPTIN", "PORTIN", "PORTINOUT", "PORTOUT", "PWMOUT", "SERIAL", "SLEEP", "SPI", "SPISLAVE", "SPI_ASYNCH", "STDIO_MESSAGES", "I2C", "I2CSLAVE", "I2C_ASYNCH"]
     },
     "MIMXRT1050_EVK": {
         "supported_form_factors": ["ARDUINO"],
