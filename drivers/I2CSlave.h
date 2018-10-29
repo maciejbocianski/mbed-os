@@ -153,6 +153,8 @@ public:
 #if !defined(DOXYGEN_ONLY)
 
 protected:
+    PinName _sda;
+    PinName _scl;
     /* Internal i2c object identifying the resources */
     i2c_t _i2c;
 
