@@ -1796,7 +1796,10 @@
             "ANALOGIN",
             "I2C",
             "I2CSLAVE",
+<<<<<<< HEAD
             "I2C_ASYNCH",
+=======
+>>>>>>> 8322216589... feat(hal-i2c): Add synchronous HAL I2C implementation for STM32
             "INTERRUPTIN",
             "PORTIN",
             "PORTINOUT",
