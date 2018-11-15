@@ -28,10 +28,16 @@ typedef enum {
 } PinDirection;
 
 typedef enum {
+    I2C_SDA = 1,
+    I2C_SCL = 2,
     NC = (int)0xFFFFFFFF
 } PinName;
 
 typedef enum {
+	PullNone = 0,
+	PullDown = 1,
+	PullUp   = 2,
+	PullDefault = PullUp
 } PinMode;
 
 #ifdef __cplusplus

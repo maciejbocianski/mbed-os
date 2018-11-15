@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Arm Limited and affiliates.
+ * Copyright (c) 2018, Arm Limited and affiliates.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,18 +15,16 @@
  * limitations under the License.
  */
 
-#ifndef MBED_OBJECTS_H
-#define MBED_OBJECTS_H
-
-#include "PeripheralNames.h"
-#include "PinNames.h"
+#ifndef MBED_I2C_OBJECT_H
+#define MBED_I2C_OBJECT_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include "gpio_object.h"
-#include "i2c_object.h"
+struct i2c_s {
+
+};
 
 #ifdef __cplusplus
 }

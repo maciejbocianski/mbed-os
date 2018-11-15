@@ -15,3 +15,7 @@
  * limitations under the License.
  */
 
+
+void sleep_manager_lock_deep_sleep() {}
+
+void sleep_manager_unlock_deep_sleep() {}

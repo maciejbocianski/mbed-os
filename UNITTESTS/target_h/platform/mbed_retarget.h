@@ -24,7 +24,9 @@
 
 #include <time.h>
 
+#if __cplusplus
 namespace mbed {
+#endif
 
 #define NAME_MAX 255
 
@@ -360,6 +362,8 @@ struct pollfd {
     short revents;
 };
 
+#if __cplusplus
 }
+#endif
 
 #endif //RETARGET_H
