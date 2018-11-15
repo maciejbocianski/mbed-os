@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Arm Limited and affiliates.
+ * Copyright (c) 2018, Arm Limited and affiliates.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,21 +15,9 @@
  * limitations under the License.
  */
 
-#ifndef MBED_OBJECTS_H
-#define MBED_OBJECTS_H
+#include "platform/mbed_error.h"
 
-#include "PeripheralNames.h"
-#include "PinNames.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#include "gpio_object.h"
-#include "i2c_object.h"
-
-#ifdef __cplusplus
+mbed_error_status_t mbed_error(mbed_error_status_t error_status, const char *error_msg, unsigned int error_value, const char *filename, int line_number)
+{
+    return 0;
 }
-#endif
-
-#endif
