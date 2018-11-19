@@ -208,7 +208,6 @@ protected:
     void irq_handler_asynch(void);
     event_callback_t _callback;
     CThunk<I2C> _irq;
-    DMAUsage _usage;
     bool _deep_sleep_locked;
 #endif
 
@@ -218,7 +217,7 @@ protected:
 
     i2c_t _i2c;
     static I2C  *_owner;
-    int    _hz;
+    uint32_t _hz;
     static SingletonPtr<PlatformMutex> _mutex;
     PinName _sda;
     PinName _scl;
