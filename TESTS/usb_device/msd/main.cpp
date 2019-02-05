@@ -16,6 +16,7 @@
  */
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>     /* srand, rand */
 #include "greentea-client/test_env.h"
 #include "unity/unity.h"
 #include "utest/utest.h"
@@ -43,6 +44,8 @@
 #define HEAP_BLOCK_DEVICE_SIZE (128 * DEFAULT_BLOCK_SIZE)
 #define MIN_HEAP_SIZE (HEAP_BLOCK_DEVICE_SIZE + 6144)
 
+
+#define MSD_SERIAL_NUMBER() TestUSBMSD::get_serial_number()
 
 /* TODO:
  *
@@ -184,7 +187,6 @@ static bool test_files_exist(const char *fs_root, const char *test_file = TEST_F
     return false;
 }
 
-
 /**
  * Mounts a filesystem to a block device
  *
@@ -232,18 +234,6 @@ void msd_process(USBMSD *msd)
 }
 
 
-/** Test mass storage device mount and unmount
- *
- * Records mounted msd disks on host side, before test start
- */
-static void record_disk_list()
-{
-    greentea_send_kv("record_disk_list", 0);
-    greentea_parse_kv(_key, _value, sizeof(_key), sizeof(_value));
-    TEST_ASSERT_EQUAL_STRING("passed", _key);
-}
-
-
 // wait until msd negotiation is done (no r/w disk operation for at least 1s)
 // max wait time is 15s
 #define WAIT_MSD_COMMUNICATION_DONE() \
@@ -284,6 +274,8 @@ static void record_disk_list()
 void storage_init()
 {
     bool result;
+    TestUSBMSD::gen_serial_number();
+
     if (mbed_heap_size >= MIN_HEAP_SIZE) {
         FATFileSystem::format(get_heap_block_device());
         result = prepare_storage(get_heap_block_device(), &heap_fs);
@@ -301,7 +293,6 @@ void storage_init()
         utest_printf("No flash block device supported!!!\n");
     }
 }
-
 
 /** Test mass storage device mount and unmount
  *
@@ -323,25 +314,28 @@ void mount_unmount_test(BlockDevice *bd, FileSystem *fs)
     msd_process_done = false;
     msd_thread.start(callback(msd_process, &usb));
 
-    record_disk_list();
+    //record_disk_list();
     for (uint32_t i = 1; i <= N; i++) {
         // mount
         usb.connect();
         WAIT_MSD_COMMUNICATION_DONE();
         // check if device is mounted on host side
-        greentea_send_kv("check_if_mounted", 0);
+        //wait(10000000);
+        greentea_send_kv("check_if_mounted", MSD_SERIAL_NUMBER());
         greentea_parse_kv(_key, _value, sizeof(_key), sizeof(_value));
         TEST_ASSERT_EQUAL_STRING_LOOP("passed", _key, i);
 
-        greentea_send_kv("get_mounted_fs_size", 0);
+        greentea_send_kv("get_mounted_fs_size", MSD_SERIAL_NUMBER());
         greentea_parse_kv(_key, _value, sizeof(_key), sizeof(_value));
         uint64_t ret_size = atoll(_key);
         TEST_ASSERT_EQUAL_UINT64(get_fs_mount_size(fs), ret_size);
 
+        //wait(10000000);
+
         // unmount
         usb.disconnect();
         // check if device is detached on host side
-        greentea_send_kv("check_if_not_mounted", 0);
+        greentea_send_kv("check_if_not_mounted", MSD_SERIAL_NUMBER());
         greentea_parse_kv(_key, _value, sizeof(_key), sizeof(_value));
         TEST_ASSERT_EQUAL_STRING_LOOP("passed", _key, i);
     }
@@ -351,17 +345,17 @@ void mount_unmount_test(BlockDevice *bd, FileSystem *fs)
         usb.connect();
         WAIT_MSD_COMMUNICATION_DONE();
         // check if device is mounted on host side
-        greentea_send_kv("check_if_mounted", 0);
+        greentea_send_kv("check_if_mounted", MSD_SERIAL_NUMBER());
         greentea_parse_kv(_key, _value, sizeof(_key), sizeof(_value));
         TEST_ASSERT_EQUAL_STRING_LOOP("passed", _key, i);
 
-        greentea_send_kv("get_mounted_fs_size", 0);
+        greentea_send_kv("get_mounted_fs_size", MSD_SERIAL_NUMBER());
         greentea_parse_kv(_key, _value, sizeof(_key), sizeof(_value));
         uint64_t ret_size = atoll(_key);
         TEST_ASSERT_EQUAL_UINT64(get_fs_mount_size(fs), ret_size);
 
         // unmount msd device on host side
-        greentea_send_kv("unmount", 0);
+        greentea_send_kv("unmount", MSD_SERIAL_NUMBER());
         greentea_parse_kv(_key, _value, sizeof(_key), sizeof(_value));
         TEST_ASSERT_EQUAL_STRING_LOOP("passed", _key, i);
 
@@ -374,7 +368,7 @@ void mount_unmount_test(BlockDevice *bd, FileSystem *fs)
         usb.disconnect();
 
         // check if device is detached on host side
-        greentea_send_kv("check_if_not_mounted", 0);
+        greentea_send_kv("check_if_not_mounted", MSD_SERIAL_NUMBER());
         greentea_parse_kv(_key, _value, sizeof(_key), sizeof(_value));
         TEST_ASSERT_EQUAL_STRING_LOOP("passed", _key, i);
     }
@@ -383,21 +377,20 @@ void mount_unmount_test(BlockDevice *bd, FileSystem *fs)
     usb.connect();
     WAIT_MSD_COMMUNICATION_DONE();
     // check if device is mounted on host side
-    greentea_send_kv("check_if_mounted", 0);
+    greentea_send_kv("check_if_mounted", MSD_SERIAL_NUMBER());
     greentea_parse_kv(_key, _value, sizeof(_key), sizeof(_value));
     TEST_ASSERT_EQUAL_STRING("passed", _key);
 
     // unmount
     usb.disconnect();
     // check if device is detached on host side
-    greentea_send_kv("check_if_not_mounted", 0);
+    greentea_send_kv("check_if_not_mounted", MSD_SERIAL_NUMBER());
     greentea_parse_kv(_key, _value, sizeof(_key), sizeof(_value));
     TEST_ASSERT_EQUAL_STRING("passed", _key);
 
     msd_process_done = true; // terminate msd_thread
     msd_thread.join();
 }
-
 
 /** Test mass storage device mount and unmount together with underlying file system operations
  *
@@ -413,28 +406,29 @@ void mount_unmount_test(BlockDevice *bd, FileSystem *fs)
  */
 void mount_unmount_and_data_test(BlockDevice *bd, FileSystem *fs)
 {
+    char params[512];
     const char *fs_root = fs->getName();
     Thread msd_thread(osPriorityHigh);
     TestUSBMSD usb(bd, false);
     msd_process_done = false;
     msd_thread.start(callback(msd_process, &usb));
 
-    record_disk_list();
     // mount
     usb.connect();
     WAIT_MSD_COMMUNICATION_DONE();
     // check if device is mounted on host side
-    greentea_send_kv("check_if_mounted", 0);
+    greentea_send_kv("check_if_mounted", MSD_SERIAL_NUMBER());
     greentea_parse_kv(_key, _value, sizeof(_key), sizeof(_value));
     TEST_ASSERT_EQUAL_STRING("passed", _key);
 
-    greentea_send_kv("check_file_exist", TEST_DIR " " TEST_FILE " " TEST_STRING);
+    sprintf(params, "%s %s %s %s", TEST_DIR, TEST_FILE, TEST_STRING, MSD_SERIAL_NUMBER());
+    greentea_send_kv("check_file_exist", params);
     greentea_parse_kv(_key, _value, sizeof(_key), sizeof(_value));
     TEST_ASSERT_EQUAL_STRING("non-exist", _key);
 
     usb.disconnect();
     // check if device is detached on host side
-    greentea_send_kv("check_if_not_mounted", 0);
+    greentea_send_kv("check_if_not_mounted", MSD_SERIAL_NUMBER());
     greentea_parse_kv(_key, _value, sizeof(_key), sizeof(_value));
     TEST_ASSERT_EQUAL_STRING("passed", _key);
 
@@ -444,15 +438,17 @@ void mount_unmount_and_data_test(BlockDevice *bd, FileSystem *fs)
     usb.connect();
     WAIT_MSD_COMMUNICATION_DONE();
     // check if device is mounted on host side
-    greentea_send_kv("check_if_mounted", 0);
+    greentea_send_kv("check_if_mounted", MSD_SERIAL_NUMBER());
     greentea_parse_kv(_key, _value, sizeof(_key), sizeof(_value));
     TEST_ASSERT_EQUAL_STRING("passed", _key);
 
-    greentea_send_kv("check_file_exist", TEST_DIR " " TEST_FILE " " TEST_STRING);
+    sprintf(params, "%s %s %s %s", TEST_DIR, TEST_FILE, TEST_STRING, MSD_SERIAL_NUMBER());
+    greentea_send_kv("check_file_exist", params);
     greentea_parse_kv(_key, _value, sizeof(_key), sizeof(_value));
     TEST_ASSERT_EQUAL_STRING("exist", _key);
 
-    greentea_send_kv("delete_files", TEST_DIR " " TEST_FILE);
+    sprintf(params, "%s %s %s", TEST_DIR, TEST_FILE, MSD_SERIAL_NUMBER());
+    greentea_send_kv("delete_files", params);
     greentea_parse_kv(_key, _value, sizeof(_key), sizeof(_value));
     TEST_ASSERT_EQUAL_STRING("passed", _key);
 
@@ -463,7 +459,7 @@ void mount_unmount_and_data_test(BlockDevice *bd, FileSystem *fs)
 
     usb.disconnect();
     // check if device is detached on host side
-    greentea_send_kv("check_if_not_mounted", 0);
+    greentea_send_kv("check_if_not_mounted", MSD_SERIAL_NUMBER());
     greentea_parse_kv(_key, _value, sizeof(_key), sizeof(_value));
     TEST_ASSERT_EQUAL_STRING("passed", _key);
 
@@ -481,7 +477,6 @@ void heap_block_device_mount_unmount_test()
     mount_unmount_test<3>(get_heap_block_device(), &heap_fs);
 }
 
-
 void heap_block_device_mount_unmount_and_data_test()
 {
     if (mbed_heap_size < MIN_HEAP_SIZE) {
@@ -498,14 +493,12 @@ void flash_block_device_mount_unmount_test()
     mount_unmount_test<3>(bd, &flash_fs);
 }
 
-
 void flash_block_device_mount_unmount_and_data_test()
 {
     BlockDevice *bd = get_flash_block_device();
     TEST_ASSERT_NOT_NULL(bd);
     mount_unmount_and_data_test(bd, &flash_fs);
 }
-
 
 
 Case cases[] = {
