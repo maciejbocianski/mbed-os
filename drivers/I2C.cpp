@@ -58,6 +58,7 @@ I2C::~I2C()
 void I2C::frequency(int hz)
 {
     lock();
+    MBED_ASSERT(_hz > 0);
     _hz = (uint32_t)hz;
 
     // We want to update the frequency even if we are already the bus owners
