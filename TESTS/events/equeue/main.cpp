@@ -29,6 +29,7 @@
 using namespace utest::v1;
 
 #define TEST_EQUEUE_SIZE (4*EVENTS_EVENT_SIZE)
+#define TEST_THREAD_STACK_SIZE 512
 
 // Test functions
 static void pass_func(void *eh)
@@ -625,7 +626,7 @@ static void multithread_test()
     uint8_t touched = 0;
     equeue_call_every(&q, 1, simple_func, &touched);
 
-    Thread t1(osPriorityNormal);
+    Thread t1(osPriorityNormal, TEST_THREAD_STACK_SIZE);
     t1.start(callback(multithread_thread, &q));
     ThisThread::sleep_for(10);
     equeue_break(&q);
@@ -833,7 +834,6 @@ static void fragmenting_barrage_test()
 }
 
 struct ethread {
-    Thread thread;
     equeue_t *q;
     int ms;
 };
@@ -862,7 +862,9 @@ static void multithreaded_barrage_test()
     t.q = &q;
     t.ms = N * 100;
 
-    t.thread.start(callback(ethread_dispatch, &t));
+    Thread t1(osPriorityNormal, TEST_THREAD_STACK_SIZE);
+
+    t1.start(callback(ethread_dispatch, &t));
 
     for (int i = 0; i < N; i++) {
         struct timing *timing = reinterpret_cast<struct timing *>(equeue_alloc(&q, sizeof(struct timing)));
@@ -877,7 +879,7 @@ static void multithreaded_barrage_test()
         TEST_ASSERT(id);
     }
 
-    err = t.thread.join();
+    err = t1.join();
     TEST_ASSERT(!err);
 
     equeue_destroy(&q);
@@ -990,7 +992,7 @@ Case cases[] = {
 
 utest::v1::status_t greentea_test_setup(const size_t number_of_cases)
 {
-    GREENTEA_SETUP(20, "default_auto");
+    GREENTEA_SETUP(40, "default_auto");
     return greentea_test_setup_handler(number_of_cases);
 }
 
