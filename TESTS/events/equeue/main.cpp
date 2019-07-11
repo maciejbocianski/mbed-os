@@ -629,7 +629,7 @@ static void multithread_test()
     t1.start(callback(multithread_thread, &q));
     ThisThread::sleep_for(10);
     equeue_break(&q);
-    err=t1.join();
+    err = t1.join();
     TEST_ASSERT(!err);
 
     TEST_ASSERT(touched);
@@ -669,7 +669,7 @@ static void background_test()
     TEST_ASSERT_EQUAL_UINT(10, ms);
 
     equeue_destroy(&q);
-    TEST_ASSERT_EQUAL_UINT((unsigned)-1, ms);
+    TEST_ASSERT_EQUAL_UINT((unsigned) - 1, ms);
 }
 
 /** Test that when chaining two equeues, by calling dispatch only on one, events are executed from both
