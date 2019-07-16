@@ -968,7 +968,13 @@ static void break_request_cleared_on_timeout_test()
     equeue_destroy(&q);
 }
 
-//????
+/** Test that syblings events don't have next pointers
+ *
+ *  Given queue is initialized.
+ *  When events are scheduled on the same time.
+ *  Then they connected via sibling pointers and siblings have their next pointer pointing to null.
+ *
+ */
 static void sibling_test()
 {
     equeue_t q;
