@@ -135,11 +135,9 @@ static void background_func(void *p, int ms)
 // Simple call tests
 
 /** Test that equeue executes function passed by equeue_call.
- *
  *  Given queue is initialized.
  *  When the event is scheduled and after that equeue_dispatch is called.
  *  Then function passed by equeue_call is executed properly.
- *
  */
 static void simple_call_test()
 {
@@ -159,11 +157,9 @@ static void simple_call_test()
 }
 
 /** Test that equeue executes function passed by equeue_call_in.
- *
  *  Given queue is initialized.
  *  When the event is scheduled and after that equeue_dispatch is called.
  *  Then function passed by equeue_call_in is executed properly.
- *
  */
 static void simple_call_in_test()
 {
@@ -185,11 +181,9 @@ static void simple_call_in_test()
 }
 
 /** Test that equeue executes function passed by equeue_call_every.
- *
  *  Given queue is initialized.
  *  When the event is scheduled and after that equeue_dispatch is called.
  *  Then function passed by equeue_call_every is executed properly.
- *
  */
 static void simple_call_every_test()
 {
@@ -208,11 +202,9 @@ static void simple_call_every_test()
 }
 
 /** Test that equeue executes function passed by equeue_post.
- *
  *  Given queue is initialized.
  *  When the event is posted and after that equeue_dispatch is called.
  *  Then function passed by equeue_post is executed properly.
- *
  */
 static void simple_post_test()
 {
@@ -238,11 +230,9 @@ static void simple_post_test()
 // Misc tests
 
 /** Test that equeue executes events attached to its events destructors by equeue_event_dtor.
- *
  *  Given queue is initialized.
  *  When equeue events are being destroyed by equeue_dispatch, equeue_cancel, or equeue_destroy.
  *  Then functions attached to equeue events destructors are executed properly.
- *
  */
 static void destructor_test()
 {
@@ -300,12 +290,10 @@ static void destructor_test()
     TEST_ASSERT_EQUAL_UINT8(3, touched);
 }
 
-/** Test that equeue_alloc returns 0 when equeue can not be allocated
- *
+/** Test that equeue_alloc returns 0 when equeue can not be allocated.
  *  Given queue is initialized.
  *  When equeue_alloc is called and equeue can not be allocated
  *  Then function equeue_alloc returns NULL.
- *
  */
 static void allocation_failure_test()
 {
@@ -324,12 +312,10 @@ static void allocation_failure_test()
     equeue_destroy(&q);
 }
 
-/** Test that equeue does not execute evenets that has been canceled
- *
+/** Test that equeue does not execute evenets that has been canceled.
  *  Given queue is initialized.
  *  When events are canceled by equeue_cancel.
  *  Then they are not executed by calling equeue_dispatch.
- *
  */
 template <int N>
 static void cancel_test()
@@ -356,12 +342,10 @@ static void cancel_test()
     equeue_destroy(&q);
 }
 
-/** Test that events can be cancelled by function executed by equeue_dispatch
- *
+/** Test that events can be cancelled by function executed by equeue_dispatch.
  *  Given queue is initialized.
  *  When event is cancelled by another event while dispatching.
  *  Then event that was cancelled is not being executed.
- *
  */
 static void cancel_inflight_test()
 {
@@ -399,12 +383,10 @@ static void cancel_inflight_test()
     equeue_destroy(&q);
 }
 
-/** Test that unnecessary canceling events would not affect executing other events
- *
+/** Test that unnecessary canceling events would not affect executing other events.
  *  Given queue is initialized.
  *  When event is unnecessary canceled by equeue_cancel.
  *  Then other events are properly executed after calling equeue_dispatch.
- *
  */
 static void cancel_unnecessarily_test()
 {
@@ -435,12 +417,10 @@ static void cancel_unnecessarily_test()
     equeue_destroy(&q);
 }
 
-/** Test that dispatching events that have 0 ms period time would not end up in infinite loop
- *
+/** Test that dispatching events that have 0 ms period time would not end up in infinite loop.
  *  Given queue is initialized.
  *  When events have 0 ms period time.
  *  Then dispatching would not end up in infinite loop.
- *
  */
 static void loop_protect_test()
 {
@@ -465,12 +445,10 @@ static void loop_protect_test()
     equeue_destroy(&q);
 }
 
-/** Test that equeue_break breaks event queue out of dispatching
- *
+/** Test that equeue_break breaks event queue out of dispatching.
  *  Given queue is initialized.
  *  When equeue_break is called.
  *  Then event queue will stop dispatching after finisching current dispatching cycle.
- *
  */
 static void break_test()
 {
@@ -492,12 +470,10 @@ static void break_test()
     equeue_destroy(&q);
 }
 
-/** Test that equeue_break function breaks equeue dispatching only once
- *
+/** Test that equeue_break function breaks equeue dispatching only once.
  *  Given queue is initialized.
  *  When equeue_break is called several times.
  *  Then equeue is breaked only once.
- *
  */
 static void break_no_windup_test()
 {
@@ -520,12 +496,10 @@ static void break_no_windup_test()
     equeue_destroy(&q);
 }
 
-/** Test that function passed by equeue_call_every is being executed periodicaly
- *
+/** Test that function passed by equeue_call_every is being executed periodicaly.
  *  Given queue is initialized.
  *  When function is passed by equeue_call_every with specified period.
  *  Then event is executed (dispatch time/period) times.
- *
  */
 static void period_test()
 {
@@ -542,12 +516,10 @@ static void period_test()
     equeue_destroy(&q);
 }
 
-/** Test that function added to the equeue by other function which already is in equeue executes in the next dispatch, or after the end of execution of the "mother" event
- *
+/** Test that function added to the equeue by other function which already is in equeue executes in the next dispatch, or after the end of execution of the "mother" event.
  *  Given queue is initialized.
  *  When nested function is added to enqueue.
  *  Then it is executed in the next dispatch, or after execution of "mother" function.
- *
  */
 static void nested_test()
 {
@@ -587,12 +559,10 @@ static void nested_test()
     equeue_destroy(&q);
 }
 
-/** Test that functions scheduled after slow function would execute according to the schedule if it is possible, if not they would execute right after sloth function
- *
+/** Test that functions scheduled after slow function would execute according to the schedule if it is possible, if not they would execute right after sloth function.
  *  Given queue is initialized.
  *  When sloth function is being called before other functions.
  *  Then if it is possible all functions start according to predefinied schedule correctly.
- *
  */
 static void sloth_test()
 {
@@ -620,12 +590,10 @@ static void sloth_test()
     equeue_destroy(&q);
 }
 
-/** Test that equeue can be breaked of dispatching from a different thread
- *
+/** Test that equeue can be breaked of dispatching from a different thread.
  *  Given queue is initialized.
  *  When equeue starts dispatching in one thread.
  *  Then it can be stopped from another thread via equeue_break.
- *
  */
 static void multithread_test()
 {
@@ -648,12 +616,10 @@ static void multithread_test()
     equeue_destroy(&q);
 }
 
-/** Test that variable reffered via equeue_background shows value in ms to the next event
- *
+/** Test that variable reffered via equeue_background shows value in ms to the next event.
  *  Given queue is initialized.
  *  When variable is reffered via equeue_background.
  *  Then it depicts the time in ms to the next event.
- *
  */
 static void background_test()
 {
@@ -683,12 +649,10 @@ static void background_test()
     TEST_ASSERT_EQUAL_UINT((unsigned int) - 1, ms);
 }
 
-/** Test that when chaining two equeues, by calling dispatch only on one, events are executed from both
- *
+/** Test that when chaining two equeues, by calling dispatch only on one, events are executed from both.
  *  Given queue is initialized.
  *  When one chained equeue is dispatched.
  *  Then events from both chained equeues are executed.
- *
  */
 static void chain_test()
 {
@@ -735,12 +699,10 @@ static void chain_test()
     equeue_destroy(&q2);
 }
 
-/** Test that unchainig equeues makes them work on thier own
- *
+/** Test that unchainig equeues makes them work on thier own.
  *  Given queue is initialized.
  *  When equeue is unchained.
  *  Then it can be only dispatched by calling with refference to it.
- *
  */
 static void unchain_test()
 {
@@ -803,12 +765,10 @@ static void unchain_test()
 
 // Barrage tests
 
-/** Test that equeue keeps good time at starting events
- *
+/** Test that equeue keeps good time at starting events.
  *  Given queue is initialized.
  *  When equeue is being dispatched.
  *  Then events happen according to the shedule with en error within a specified range.
- *
  */
 template<int N>
 static void simple_barrage_test()
@@ -835,12 +795,10 @@ static void simple_barrage_test()
     equeue_destroy(&q);
 }
 
-/** Test that equeue keeps good time at starting events when events are added via functions already placed in equeue
- *
+/** Test that equeue keeps good time at starting events when events are added via functions already placed in equeue.
  *  Given queue is initialized.
  *  When equeue is being dispatched and new events are added via already placed in equeue.
  *  Then events happen according to the shedule with en error within a specified range.
- *
  */
 template<int N>
 static void fragmenting_barrage_test()
@@ -881,12 +839,10 @@ static void ethread_dispatch(void *p)
     equeue_dispatch(t->q, t->ms);
 }
 
-/** Test that equeue keeps good time at starting events even if it is working on different thread
- *
+/** Test that equeue keeps good time at starting events even if it is working on different thread.
  *  Given queue is initialized.
  *  When equeue is being dispatched on different thread.
  *  Then events happen according to the shedule with en error within a specified range.
- *
  */
 template<int N>
 static void multithreaded_barrage_test()
@@ -936,11 +892,9 @@ static void simple_breaker(void *p)
 }
 
 /** Test that equeue stops executing events when function equeue_break is called, not when the function that called it finishes.
- *
  *  Given queue is initialized.
  *  When equeue_break is called.
  *  Then event queue will stop dispatching regardless of function that called it.
- *
  */
 static void break_request_cleared_on_timeout_test()
 {
@@ -968,12 +922,10 @@ static void break_request_cleared_on_timeout_test()
     equeue_destroy(&q);
 }
 
-/** Test that syblings events don't have next pointers
- *
+/** Test that syblings events don't have next pointers.
  *  Given queue is initialized.
  *  When events are scheduled on the same time.
  *  Then they connected via sibling pointers and siblings have their next pointer pointing to null.
- *
  */
 static void sibling_test()
 {
