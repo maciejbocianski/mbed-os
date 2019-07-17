@@ -128,13 +128,37 @@ static void multithread_thread(equeue_t *p)
 
 static void background_func(void *p, int ms)
 {
-    *(reinterpret_cast<unsigned *>(p)) = ms;
+    *(reinterpret_cast<int *>(p)) = ms;
 }
 
+struct ethread {
+    equeue_t *q;
+    int ms;
+};
+
+static void ethread_dispatch(void *p)
+{
+    struct ethread *t = reinterpret_cast<struct ethread *>(p);
+    equeue_dispatch(t->q, t->ms);
+}
+
+struct count_and_queue {
+    int p;
+    equeue_t *q;
+};
+
+static void simple_breaker(void *p)
+{
+    struct count_and_queue *caq = reinterpret_cast<struct count_and_queue *>(p);
+    equeue_break(caq->q);
+    ThisThread::sleep_for(10);
+    caq->p++;
+}
 
 // Simple call tests
 
 /** Test that equeue executes function passed by equeue_call.
+ * 
  *  Given queue is initialized.
  *  When the event is scheduled and after that equeue_dispatch is called.
  *  Then function passed by equeue_call is executed properly.
@@ -143,20 +167,21 @@ static void simple_call_test()
 {
     equeue_t q;
     int err = equeue_create(&q, TEST_EQUEUE_SIZE);
-    TEST_ASSERT_EQUAL(0, err);
+    TEST_ASSERT_EQUAL_INT(0, err);
 
     uint8_t touched = 0;
     equeue_call(&q, simple_func, &touched);
     equeue_dispatch(&q, 0);
-    TEST_ASSERT_EQUAL(1, touched);
+    TEST_ASSERT_EQUAL_UINT8(1, touched);
 
     equeue_dispatch(&q, 10);
-    TEST_ASSERT_EQUAL(1, touched);
+    TEST_ASSERT_EQUAL_UINT8(1, touched);
 
     equeue_destroy(&q);
 }
 
 /** Test that equeue executes function passed by equeue_call_in.
+ * 
  *  Given queue is initialized.
  *  When the event is scheduled and after that equeue_dispatch is called.
  *  Then function passed by equeue_call_in is executed properly.
@@ -165,22 +190,23 @@ static void simple_call_in_test()
 {
     equeue_t q;
     int err = equeue_create(&q, TEST_EQUEUE_SIZE);
-    TEST_ASSERT_EQUAL(0, err);
+    TEST_ASSERT_EQUAL_INT(0, err);
 
     uint8_t touched = 0;
     int id = equeue_call_in(&q, 10, simple_func, &touched);
     TEST_ASSERT_NOT_EQUAL(0, id);
 
     equeue_dispatch(&q, 15);
-    TEST_ASSERT_EQUAL(1, touched);
+    TEST_ASSERT_EQUAL_UINT8(1, touched);
 
     equeue_dispatch(&q, 10);
-    TEST_ASSERT_EQUAL(1, touched);
+    TEST_ASSERT_EQUAL_UINT8(1, touched);
 
     equeue_destroy(&q);
 }
 
 /** Test that equeue executes function passed by equeue_call_every.
+ * 
  *  Given queue is initialized.
  *  When the event is scheduled and after that equeue_dispatch is called.
  *  Then function passed by equeue_call_every is executed properly.
@@ -189,19 +215,20 @@ static void simple_call_every_test()
 {
     equeue_t q;
     int err = equeue_create(&q, TEST_EQUEUE_SIZE);
-    TEST_ASSERT_EQUAL(0, err);
+    TEST_ASSERT_EQUAL_INT(0, err);
 
     uint8_t touched = 0;
     int id = equeue_call_every(&q, 10, simple_func, &touched);
     TEST_ASSERT_NOT_EQUAL(0, id);
 
     equeue_dispatch(&q, 15);
-    TEST_ASSERT_EQUAL(1, touched);
+    TEST_ASSERT_EQUAL_UINT8(1, touched);
 
     equeue_destroy(&q);
 }
 
 /** Test that equeue executes function passed by equeue_post.
+ * 
  *  Given queue is initialized.
  *  When the event is posted and after that equeue_dispatch is called.
  *  Then function passed by equeue_post is executed properly.
@@ -210,7 +237,7 @@ static void simple_post_test()
 {
     equeue_t q;
     int err = equeue_create(&q, TEST_EQUEUE_SIZE);
-    TEST_ASSERT_EQUAL(0, err);
+    TEST_ASSERT_EQUAL_INT(0, err);
 
     uint8_t touched = 0;
     struct indirect *i = reinterpret_cast<struct indirect *>(equeue_alloc(&q, sizeof(struct indirect)));
@@ -221,7 +248,7 @@ static void simple_post_test()
     TEST_ASSERT_NOT_EQUAL(0, id);
 
     equeue_dispatch(&q, 0);
-    TEST_ASSERT_EQUAL(1, *i->touched);
+    TEST_ASSERT_EQUAL_UINT8(1, *i->touched);
 
     equeue_destroy(&q);
 }
@@ -230,6 +257,7 @@ static void simple_post_test()
 // Misc tests
 
 /** Test that equeue executes events attached to its events destructors by equeue_event_dtor.
+ * 
  *  Given queue is initialized.
  *  When equeue events are being destroyed by equeue_dispatch, equeue_cancel, or equeue_destroy.
  *  Then functions attached to equeue events destructors are executed properly.
@@ -238,7 +266,7 @@ static void destructor_test()
 {
     equeue_t q;
     int err = equeue_create(&q, TEST_EQUEUE_SIZE);
-    TEST_ASSERT_EQUAL(0, err);
+    TEST_ASSERT_EQUAL_INT(0, err);
 
     uint8_t touched = 0;
     struct indirect *e;
@@ -291,6 +319,7 @@ static void destructor_test()
 }
 
 /** Test that equeue_alloc returns 0 when equeue can not be allocated.
+ * 
  *  Given queue is initialized.
  *  When equeue_alloc is called and equeue can not be allocated
  *  Then function equeue_alloc returns NULL.
@@ -299,7 +328,7 @@ static void allocation_failure_test()
 {
     equeue_t q;
     int err = equeue_create(&q, TEST_EQUEUE_SIZE);
-    TEST_ASSERT_EQUAL(0, err);
+    TEST_ASSERT_EQUAL_INT(0, err);
 
     void *p = equeue_alloc(&q, 2 * TEST_EQUEUE_SIZE);
     TEST_ASSERT_NULL(p);
@@ -313,6 +342,7 @@ static void allocation_failure_test()
 }
 
 /** Test that equeue does not execute evenets that has been canceled.
+ * 
  *  Given queue is initialized.
  *  When events are canceled by equeue_cancel.
  *  Then they are not executed by calling equeue_dispatch.
@@ -322,14 +352,14 @@ static void cancel_test()
 {
     equeue_t q;
     int err = equeue_create(&q, (N * EVENTS_EVENT_SIZE));
-    TEST_ASSERT_EQUAL(0, err);
+    TEST_ASSERT_EQUAL_INT(0, err);
 
     uint8_t touched = 0;
     int ids[N];
 
     for (int i = 0; i < N; i++) {
         ids[i] = equeue_call(&q, simple_func, &touched);
-        TEST_ASSERT(ids[i]);
+        TEST_ASSERT_NOT_EQUAL(0, ids[i]);
     }
 
     for (int i = N - 1; i >= 0; i--) {
@@ -337,12 +367,13 @@ static void cancel_test()
     }
 
     equeue_dispatch(&q, 0);
-    TEST_ASSERT_EQUAL(0, touched);
+    TEST_ASSERT_EQUAL_UINT(0, touched);
 
     equeue_destroy(&q);
 }
 
 /** Test that events can be cancelled by function executed by equeue_dispatch.
+ * 
  *  Given queue is initialized.
  *  When event is cancelled by another event while dispatching.
  *  Then event that was cancelled is not being executed.
@@ -351,7 +382,7 @@ static void cancel_inflight_test()
 {
     equeue_t q;
     int err = equeue_create(&q, TEST_EQUEUE_SIZE);
-    TEST_ASSERT_EQUAL(0, err);
+    TEST_ASSERT_EQUAL_INT(0, err);
 
     uint8_t touched = 0;
 
@@ -359,13 +390,13 @@ static void cancel_inflight_test()
     equeue_cancel(&q, id);
 
     equeue_dispatch(&q, 0);
-    TEST_ASSERT_EQUAL(0, touched);
+    TEST_ASSERT_EQUAL_UINT8(0, touched);
 
     id = equeue_call(&q, simple_func, &touched);
     equeue_cancel(&q, id);
 
     equeue_dispatch(&q, 0);
-    TEST_ASSERT_EQUAL(0, touched);
+    TEST_ASSERT_EQUAL_UINT8(0, touched);
 
     struct cancel *ccel = reinterpret_cast<struct cancel *>(equeue_alloc(&q, sizeof(struct cancel)));
     TEST_ASSERT_NOT_NULL(ccel);
@@ -378,12 +409,13 @@ static void cancel_inflight_test()
     ccel->id = equeue_call(&q, simple_func, &touched);
 
     equeue_dispatch(&q, 0);
-    TEST_ASSERT_EQUAL(0, touched);
+    TEST_ASSERT_EQUAL_UINT8(0, touched);
 
     equeue_destroy(&q);
 }
 
 /** Test that unnecessary canceling events would not affect executing other events.
+ * 
  *  Given queue is initialized.
  *  When event is unnecessary canceled by equeue_cancel.
  *  Then other events are properly executed after calling equeue_dispatch.
@@ -392,7 +424,7 @@ static void cancel_unnecessarily_test()
 {
     equeue_t q;
     int err = equeue_create(&q, TEST_EQUEUE_SIZE);
-    TEST_ASSERT_EQUAL(0, err);
+    TEST_ASSERT_EQUAL_INT(0, err);
 
     int id = equeue_call(&q, pass_func, 0);
     for (int i = 0; i < 5; i++) {
@@ -412,12 +444,13 @@ static void cancel_unnecessarily_test()
     }
 
     equeue_dispatch(&q, 0);
-    TEST_ASSERT_EQUAL(1, touched);
+    TEST_ASSERT_EQUAL_UINT8(1, touched);
 
     equeue_destroy(&q);
 }
 
 /** Test that dispatching events that have 0 ms period time would not end up in infinite loop.
+ * 
  *  Given queue is initialized.
  *  When events have 0 ms period time.
  *  Then dispatching would not end up in infinite loop.
@@ -426,26 +459,27 @@ static void loop_protect_test()
 {
     equeue_t q;
     int err = equeue_create(&q, TEST_EQUEUE_SIZE);
-    TEST_ASSERT_EQUAL(0, err);
+    TEST_ASSERT_EQUAL_INT(0, err);
 
     uint8_t touched1 = 0;
     equeue_call_every(&q, 0, simple_func, &touched1);
 
     equeue_dispatch(&q, 0);
-    TEST_ASSERT_EQUAL(1, touched1);
+    TEST_ASSERT_EQUAL_UINT8(1, touched1);
 
     touched1 = 0;
     uint8_t touched2 = 0;
-    equeue_call_every(&q, 10, simple_func, &touched2);
+    equeue_call_every(&q, 1, simple_func, &touched2);
 
     equeue_dispatch(&q, 0);
-    TEST_ASSERT_EQUAL(1, touched1);
-    TEST_ASSERT_EQUAL(0, touched2);
+    TEST_ASSERT_EQUAL_UINT8(1, touched1);
+    TEST_ASSERT_EQUAL_UINT8(0, touched2);
 
     equeue_destroy(&q);
 }
 
 /** Test that equeue_break breaks event queue out of dispatching.
+ * 
  *  Given queue is initialized.
  *  When equeue_break is called.
  *  Then event queue will stop dispatching after finisching current dispatching cycle.
@@ -454,7 +488,7 @@ static void break_test()
 {
     equeue_t q;
     int err = equeue_create(&q, TEST_EQUEUE_SIZE);
-    TEST_ASSERT_EQUAL(0, err);
+    TEST_ASSERT_EQUAL_INT(0, err);
 
     uint8_t touched1 = 0;
     equeue_call_every(&q, 0, simple_func, &touched1);
@@ -464,39 +498,41 @@ static void break_test()
 
     equeue_break(&q);
     equeue_dispatch(&q, -1);
-    TEST_ASSERT_EQUAL(1, touched1);
-    TEST_ASSERT_EQUAL(0, touched2);
+    TEST_ASSERT_EQUAL_UINT8(1, touched1);
+    TEST_ASSERT_EQUAL_UINT8(0, touched2);
 
     equeue_destroy(&q);
 }
 
 /** Test that equeue_break function breaks equeue dispatching only once.
+ * 
  *  Given queue is initialized.
  *  When equeue_break is called several times.
- *  Then equeue is breaked only once.
+ *  Then equeue is stopped only once.
  */
 static void break_no_windup_test()
 {
     equeue_t q;
     int err = equeue_create(&q, TEST_EQUEUE_SIZE);
-    TEST_ASSERT_EQUAL(0, err);
+    TEST_ASSERT_EQUAL_INT(0, err);
 
-    int count = 0;
-    equeue_call_every(&q, 0, simple_func, &count);
+    uint8_t touched = 0;
+    equeue_call_every(&q, 0, simple_func, &touched);
 
     equeue_break(&q);
     equeue_break(&q);
     equeue_dispatch(&q, -1);
-    TEST_ASSERT_EQUAL_INT(1, count);
+    TEST_ASSERT_EQUAL_UINT8(1, touched);
 
-    count = 0;
+    touched = 0;
     equeue_dispatch(&q, 55);
-    TEST_ASSERT(count > 1);
+    TEST_ASSERT(touched > 1);
 
     equeue_destroy(&q);
 }
 
-/** Test that function passed by equeue_call_every is being executed periodicaly.
+/** Test that function passed by equeue_call_every is being executed periodically.
+ * 
  *  Given queue is initialized.
  *  When function is passed by equeue_call_every with specified period.
  *  Then event is executed (dispatch time/period) times.
@@ -505,18 +541,19 @@ static void period_test()
 {
     equeue_t q;
     int err = equeue_create(&q, TEST_EQUEUE_SIZE);
-    TEST_ASSERT_EQUAL(0, err);
+    TEST_ASSERT_EQUAL_INT(0, err);
 
-    int count = 0;
-    equeue_call_every(&q, 10, simple_func, &count);
+    int touched = 0;
+    equeue_call_every(&q, 10, simple_func, &touched);
 
     equeue_dispatch(&q, 55);
-    TEST_ASSERT_EQUAL_INT(5, count);
+    TEST_ASSERT_EQUAL_INT(5, touched);
 
     equeue_destroy(&q);
 }
 
 /** Test that function added to the equeue by other function which already is in equeue executes in the next dispatch, or after the end of execution of the "mother" event.
+ * 
  *  Given queue is initialized.
  *  When nested function is added to enqueue.
  *  Then it is executed in the next dispatch, or after execution of "mother" function.
@@ -525,7 +562,7 @@ static void nested_test()
 {
     equeue_t q;
     int err = equeue_create(&q, TEST_EQUEUE_SIZE);
-    TEST_ASSERT_EQUAL(0, err);
+    TEST_ASSERT_EQUAL_INT(0, err);
 
     uint8_t touched = 0;
     struct nest *nst = reinterpret_cast<struct nest *>(equeue_alloc(&q, sizeof(struct nest)));
@@ -560,15 +597,16 @@ static void nested_test()
 }
 
 /** Test that functions scheduled after slow function would execute according to the schedule if it is possible, if not they would execute right after sloth function.
+ * 
  *  Given queue is initialized.
  *  When sloth function is being called before other functions.
- *  Then if it is possible all functions start according to predefinied schedule correctly.
+ *  Then if it is possible all functions start according to predefined schedule correctly.
  */
 static void sloth_test()
 {
     equeue_t q;
     int err = equeue_create(&q, TEST_EQUEUE_SIZE);
-    TEST_ASSERT_EQUAL(0, err);
+    TEST_ASSERT_EQUAL_INT(0, err);
 
     uint8_t touched1 = 0;
     uint8_t touched2 = 0;
@@ -590,7 +628,8 @@ static void sloth_test()
     equeue_destroy(&q);
 }
 
-/** Test that equeue can be breaked of dispatching from a different thread.
+/** Test that equeue can be broken of dispatching from a different thread.
+ * 
  *  Given queue is initialized.
  *  When equeue starts dispatching in one thread.
  *  Then it can be stopped from another thread via equeue_break.
@@ -599,7 +638,7 @@ static void multithread_test()
 {
     equeue_t q;
     int err = equeue_create(&q, TEST_EQUEUE_SIZE);
-    TEST_ASSERT_EQUAL(0, err);
+    TEST_ASSERT_EQUAL_INT(0, err);
 
     uint8_t touched = 0;
     equeue_call_every(&q, 1, simple_func, &touched);
@@ -609,110 +648,115 @@ static void multithread_test()
     ThisThread::sleep_for(10);
     equeue_break(&q);
     err = t1.join();
-    TEST_ASSERT_EQUAL(0, err);
+    TEST_ASSERT_EQUAL_INT(0, err);
 
     TEST_ASSERT(touched > 1);
 
     equeue_destroy(&q);
 }
 
-/** Test that variable reffered via equeue_background shows value in ms to the next event.
+/** Test that variable referred via equeue_background shows value in ms to the next event.
+ * 
  *  Given queue is initialized.
- *  When variable is reffered via equeue_background.
+ *  When variable is referred via equeue_background.
  *  Then it depicts the time in ms to the next event.
  */
 static void background_test()
 {
     equeue_t q;
     int err = equeue_create(&q, TEST_EQUEUE_SIZE);
-    TEST_ASSERT_EQUAL(0, err);
+    TEST_ASSERT_EQUAL_INT(0, err);
 
     int id = equeue_call_in(&q, 20, pass_func, 0);
     TEST_ASSERT_NOT_EQUAL(0, id);
 
-    unsigned int ms;
+    int ms;
     equeue_background(&q, background_func, &ms);
-    TEST_ASSERT_EQUAL_UINT(20, ms);
+    TEST_ASSERT_EQUAL_INT(20, ms);
 
     id = equeue_call_in(&q, 10, pass_func, 0);
     TEST_ASSERT_NOT_EQUAL(0, id);
-    TEST_ASSERT_EQUAL_UINT(10, ms);
+    TEST_ASSERT_EQUAL_INT(10, ms);
 
     id = equeue_call(&q, pass_func, 0);
     TEST_ASSERT_NOT_EQUAL(0, id);
-    TEST_ASSERT_EQUAL_UINT(0, ms);
+    TEST_ASSERT_EQUAL_INT(0, ms);
 
     equeue_dispatch(&q, 0);
-    TEST_ASSERT_EQUAL_UINT(10, ms);
+    TEST_ASSERT_EQUAL_INT(10, ms);
 
     equeue_destroy(&q);
-    TEST_ASSERT_EQUAL_UINT((unsigned int) - 1, ms);
+    TEST_ASSERT_EQUAL_INT(-1, ms);
 }
 
-/** Test that when chaining two equeues, by calling dispatch only on one, events are executed from both.
+/** Test that when chaining two equeues, events from both equeues execute by calling dispatch only on target.
+ * 
  *  Given queue is initialized.
- *  When one chained equeue is dispatched.
+ *  When target chained equeue is dispatched.
  *  Then events from both chained equeues are executed.
  */
 static void chain_test()
 {
     equeue_t q1;
     int err = equeue_create(&q1, TEST_EQUEUE_SIZE);
-    TEST_ASSERT_EQUAL(0, err);
+    TEST_ASSERT_EQUAL_INT(0, err);
 
     equeue_t q2;
     err = equeue_create(&q2, TEST_EQUEUE_SIZE);
-    TEST_ASSERT_EQUAL(0, err);
+    TEST_ASSERT_EQUAL_INT(0, err);
 
     equeue_chain(&q2, &q1);
 
-    uint8_t touched = 0;
+    uint8_t touched1 = 0;
+    uint8_t touched2 = 0;
 
-    int id1 = equeue_call_in(&q1, 20, simple_func, &touched);
+    int id1 = equeue_call_in(&q1, 20, simple_func, &touched1);
     TEST_ASSERT_NOT_EQUAL(0, id1);
-    int id2 = equeue_call_in(&q2, 20, simple_func, &touched);
+    int id2 = equeue_call_in(&q2, 20, simple_func, &touched2);
     TEST_ASSERT_NOT_EQUAL(0, id2);
 
-    id1 = equeue_call(&q1, simple_func, &touched);
+    id1 = equeue_call(&q1, simple_func, &touched1);
     TEST_ASSERT_NOT_EQUAL(0, id1);
-    id2 = equeue_call(&q2, simple_func, &touched);
+    id2 = equeue_call(&q2, simple_func, &touched2);
     TEST_ASSERT_NOT_EQUAL(0, id2);
 
-    id1 = equeue_call_in(&q1, 5, simple_func, &touched);
+    id1 = equeue_call_in(&q1, 5, simple_func, &touched1);
     TEST_ASSERT_NOT_EQUAL(0, id1);
-    id2 = equeue_call_in(&q2, 5, simple_func, &touched);
+    id2 = equeue_call_in(&q2, 5, simple_func, &touched2);
     TEST_ASSERT_NOT_EQUAL(0, id2);
 
     equeue_cancel(&q1, id1);
     equeue_cancel(&q2, id2);
 
-    id1 = equeue_call_in(&q1, 10, simple_func, &touched);
+    id1 = equeue_call_in(&q1, 10, simple_func, &touched1);
     TEST_ASSERT_NOT_EQUAL(0, id1);
-    id2 = equeue_call_in(&q2, 10, simple_func, &touched);
+    id2 = equeue_call_in(&q2, 10, simple_func, &touched2);
     TEST_ASSERT_NOT_EQUAL(0, id2);
 
     equeue_dispatch(&q1, 30);
 
-    TEST_ASSERT_EQUAL_UINT8(6, touched);
+    TEST_ASSERT_EQUAL_UINT8(3, touched1);
+    TEST_ASSERT_EQUAL_UINT8(3, touched2);
 
     equeue_destroy(&q1);
     equeue_destroy(&q2);
 }
 
-/** Test that unchainig equeues makes them work on thier own.
+/** Test that unchaining equeues makes them work on their own.
+ * 
  *  Given queue is initialized.
  *  When equeue is unchained.
- *  Then it can be only dispatched by calling with refference to it.
+ *  Then it can be only dispatched by calling with reference to it.
  */
 static void unchain_test()
 {
     equeue_t q1;
     int err = equeue_create(&q1, TEST_EQUEUE_SIZE);
-    TEST_ASSERT_EQUAL(0, err);
+    TEST_ASSERT_EQUAL_INT(0, err);
 
     equeue_t q2;
     err = equeue_create(&q2, TEST_EQUEUE_SIZE);
-    TEST_ASSERT_EQUAL(0, err);
+    TEST_ASSERT_EQUAL_INT(0, err);
 
     equeue_chain(&q2, &q1);
 
@@ -766,16 +810,17 @@ static void unchain_test()
 // Barrage tests
 
 /** Test that equeue keeps good time at starting events.
+ * 
  *  Given queue is initialized.
  *  When equeue is being dispatched.
- *  Then events happen according to the shedule with en error within a specified range.
+ *  Then events happen according to the schedule with an error within a specified range.
  */
 template<int N>
 static void simple_barrage_test()
 {
     equeue_t q;
     int err = equeue_create(&q, N * (EQUEUE_EVENT_SIZE + sizeof(struct timing)));
-    TEST_ASSERT_EQUAL(0, err);
+    TEST_ASSERT_EQUAL_INT(0, err);
 
     for (int i = 0; i < N; i++) {
         struct timing *timing = reinterpret_cast<struct timing *>(equeue_alloc(&q, sizeof(struct timing)));
@@ -796,9 +841,10 @@ static void simple_barrage_test()
 }
 
 /** Test that equeue keeps good time at starting events when events are added via functions already placed in equeue.
+ * 
  *  Given queue is initialized.
  *  When equeue is being dispatched and new events are added via already placed in equeue.
- *  Then events happen according to the shedule with en error within a specified range.
+ *  Then events happen according to the schedule with an error within a specified range.
  */
 template<int N>
 static void fragmenting_barrage_test()
@@ -806,7 +852,7 @@ static void fragmenting_barrage_test()
     equeue_t q;
     int err = equeue_create(&q,
                             2 * N * (EQUEUE_EVENT_SIZE + sizeof(struct fragment) + N * sizeof(int)));
-    TEST_ASSERT_EQUAL(0, err);
+    TEST_ASSERT_EQUAL_INT(0, err);
 
     for (int i = 0; i < N; i++) {
         size_t size = sizeof(struct fragment) + i * sizeof(int);
@@ -828,28 +874,18 @@ static void fragmenting_barrage_test()
     equeue_destroy(&q);
 }
 
-struct ethread {
-    equeue_t *q;
-    int ms;
-};
-
-static void ethread_dispatch(void *p)
-{
-    struct ethread *t = reinterpret_cast<struct ethread *>(p);
-    equeue_dispatch(t->q, t->ms);
-}
-
 /** Test that equeue keeps good time at starting events even if it is working on different thread.
+ * 
  *  Given queue is initialized.
  *  When equeue is being dispatched on different thread.
- *  Then events happen according to the shedule with en error within a specified range.
+ *  Then events happen according to the schedule with an error within a specified range.
  */
 template<int N>
 static void multithreaded_barrage_test()
 {
     equeue_t q;
     int err = equeue_create(&q, N * (EQUEUE_EVENT_SIZE + sizeof(struct timing)));
-    TEST_ASSERT_EQUAL(0, err);
+    TEST_ASSERT_EQUAL_INT(0, err);
 
     struct ethread t;
     t.q = &q;
@@ -873,28 +909,16 @@ static void multithreaded_barrage_test()
     }
 
     err = t1.join();
-    TEST_ASSERT_EQUAL(0, err);
+    TEST_ASSERT_EQUAL_INT(0, err);
 
     equeue_destroy(&q);
 }
 
-struct count_and_queue {
-    int p;
-    equeue_t *q;
-};
-
-static void simple_breaker(void *p)
-{
-    struct count_and_queue *caq = reinterpret_cast<struct count_and_queue *>(p);
-    equeue_break(caq->q);
-    ThisThread::sleep_for(10);
-    caq->p++;
-}
-
-/** Test that equeue stops executing events when function equeue_break is called, not when the function that called it finishes.
+/** Test that break request flag is cleared when equeue stops dispatching timeouts.
+ * 
  *  Given queue is initialized.
- *  When equeue_break is called.
- *  Then event queue will stop dispatching regardless of function that called it.
+ *  When equeue break request flag is called but equeue stops dispatching because of timeout.
+ *  Then next equeue dispatch is not stopped.
  */
 static void break_request_cleared_on_timeout_test()
 {
@@ -906,26 +930,28 @@ static void break_request_cleared_on_timeout_test()
     pq.p = 0;
     pq.q = &q;
 
-    int id = equeue_call_every(&q, 10, simple_breaker, &pq);
+    int id = equeue_call_in(&q, 1, simple_breaker, &pq);
 
-    equeue_dispatch(&q, 55);
+    equeue_dispatch(&q, 10);
+
     TEST_ASSERT_EQUAL_INT(1, pq.p);
 
     equeue_cancel(&q, id);
 
-    int count = 0;
-    equeue_call_every(&q, 10, simple_func, &count);
+    uint8_t touched = 0;
+    equeue_call_every(&q, 10, simple_func, &touched);
 
     equeue_dispatch(&q, 55);
-    TEST_ASSERT_EQUAL(5, count);
+    TEST_ASSERT_EQUAL_UINT8(5, touched);
 
     equeue_destroy(&q);
 }
 
-/** Test that syblings events don't have next pointers.
+/** Test that siblings events don't have next pointers.
+ * 
  *  Given queue is initialized.
  *  When events are scheduled on the same time.
- *  Then they connected via sibling pointers and siblings have their next pointer pointing to null.
+ *  Then they are connected via sibling pointers and siblings have their next pointer pointing to null.
  */
 static void sibling_test()
 {
