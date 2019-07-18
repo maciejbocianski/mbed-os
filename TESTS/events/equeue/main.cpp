@@ -21,15 +21,12 @@
 
 #include "equeue.h"
 #include "mbed.h"
-#include "rtos.h"
-#include <stdlib.h>
-#include <stdint.h>
-#include <string.h>
 
 using namespace utest::v1;
 
 #define TEST_EQUEUE_SIZE (4*EVENTS_EVENT_SIZE)
 #define TEST_THREAD_STACK_SIZE 512
+#define DISPATCH_INFINITE -1
 
 // Test functions
 static void pass_func(void *eh)
@@ -123,7 +120,7 @@ static void nest_func(void *p)
 
 static void multithread_thread(equeue_t *p)
 {
-    equeue_dispatch(p, -1);
+    equeue_dispatch(p, DISPATCH_INFINITE);
 }
 
 static void background_func(void *p, int ms)
@@ -158,12 +155,12 @@ static void simple_breaker(void *p)
 // Simple call tests
 
 /** Test that equeue executes function passed by equeue_call.
- * 
+ *
  *  Given queue is initialized.
  *  When the event is scheduled and after that equeue_dispatch is called.
  *  Then function passed by equeue_call is executed properly.
  */
-static void simple_call_test()
+static void test_equeue_simple_call()
 {
     equeue_t q;
     int err = equeue_create(&q, TEST_EQUEUE_SIZE);
@@ -181,12 +178,12 @@ static void simple_call_test()
 }
 
 /** Test that equeue executes function passed by equeue_call_in.
- * 
+ *
  *  Given queue is initialized.
  *  When the event is scheduled and after that equeue_dispatch is called.
  *  Then function passed by equeue_call_in is executed properly.
  */
-static void simple_call_in_test()
+static void test_equeue_simple_call_in()
 {
     equeue_t q;
     int err = equeue_create(&q, TEST_EQUEUE_SIZE);
@@ -206,12 +203,12 @@ static void simple_call_in_test()
 }
 
 /** Test that equeue executes function passed by equeue_call_every.
- * 
+ *
  *  Given queue is initialized.
  *  When the event is scheduled and after that equeue_dispatch is called.
  *  Then function passed by equeue_call_every is executed properly.
  */
-static void simple_call_every_test()
+static void test_equeue_simple_call_every()
 {
     equeue_t q;
     int err = equeue_create(&q, TEST_EQUEUE_SIZE);
@@ -228,12 +225,12 @@ static void simple_call_every_test()
 }
 
 /** Test that equeue executes function passed by equeue_post.
- * 
+ *
  *  Given queue is initialized.
  *  When the event is posted and after that equeue_dispatch is called.
  *  Then function passed by equeue_post is executed properly.
  */
-static void simple_post_test()
+static void test_equeue_simple_post()
 {
     equeue_t q;
     int err = equeue_create(&q, TEST_EQUEUE_SIZE);
@@ -257,12 +254,12 @@ static void simple_post_test()
 // Misc tests
 
 /** Test that equeue executes events attached to its events destructors by equeue_event_dtor.
- * 
+ *
  *  Given queue is initialized.
  *  When equeue events are being destroyed by equeue_dispatch, equeue_cancel, or equeue_destroy.
  *  Then functions attached to equeue events destructors are executed properly.
  */
-static void destructor_test()
+static void test_equeue_destructor()
 {
     equeue_t q;
     int err = equeue_create(&q, TEST_EQUEUE_SIZE);
@@ -319,12 +316,12 @@ static void destructor_test()
 }
 
 /** Test that equeue_alloc returns 0 when equeue can not be allocated.
- * 
+ *
  *  Given queue is initialized.
  *  When equeue_alloc is called and equeue can not be allocated
  *  Then function equeue_alloc returns NULL.
  */
-static void allocation_failure_test()
+static void test_equeue_allocation_failure()
 {
     equeue_t q;
     int err = equeue_create(&q, TEST_EQUEUE_SIZE);
@@ -342,13 +339,13 @@ static void allocation_failure_test()
 }
 
 /** Test that equeue does not execute evenets that has been canceled.
- * 
+ *
  *  Given queue is initialized.
  *  When events are canceled by equeue_cancel.
  *  Then they are not executed by calling equeue_dispatch.
  */
 template <int N>
-static void cancel_test()
+static void test_equeue_cancel()
 {
     equeue_t q;
     int err = equeue_create(&q, (N * EVENTS_EVENT_SIZE));
@@ -373,12 +370,12 @@ static void cancel_test()
 }
 
 /** Test that events can be cancelled by function executed by equeue_dispatch.
- * 
+ *
  *  Given queue is initialized.
  *  When event is cancelled by another event while dispatching.
  *  Then event that was cancelled is not being executed.
  */
-static void cancel_inflight_test()
+static void test_equeue_cancel_inflight()
 {
     equeue_t q;
     int err = equeue_create(&q, TEST_EQUEUE_SIZE);
@@ -415,12 +412,12 @@ static void cancel_inflight_test()
 }
 
 /** Test that unnecessary canceling events would not affect executing other events.
- * 
+ *
  *  Given queue is initialized.
  *  When event is unnecessary canceled by equeue_cancel.
  *  Then other events are properly executed after calling equeue_dispatch.
  */
-static void cancel_unnecessarily_test()
+static void test_equeue_cancel_unnecessarily()
 {
     equeue_t q;
     int err = equeue_create(&q, TEST_EQUEUE_SIZE);
@@ -450,12 +447,12 @@ static void cancel_unnecessarily_test()
 }
 
 /** Test that dispatching events that have 0 ms period time would not end up in infinite loop.
- * 
+ *
  *  Given queue is initialized.
  *  When events have 0 ms period time.
  *  Then dispatching would not end up in infinite loop.
  */
-static void loop_protect_test()
+static void test_equeue_loop_protect()
 {
     equeue_t q;
     int err = equeue_create(&q, TEST_EQUEUE_SIZE);
@@ -479,12 +476,12 @@ static void loop_protect_test()
 }
 
 /** Test that equeue_break breaks event queue out of dispatching.
- * 
+ *
  *  Given queue is initialized.
  *  When equeue_break is called.
  *  Then event queue will stop dispatching after finisching current dispatching cycle.
  */
-static void break_test()
+static void test_equeue_break()
 {
     equeue_t q;
     int err = equeue_create(&q, TEST_EQUEUE_SIZE);
@@ -497,7 +494,7 @@ static void break_test()
     equeue_call_every(&q, 5, simple_func, &touched2);
 
     equeue_break(&q);
-    equeue_dispatch(&q, -1);
+    equeue_dispatch(&q, DISPATCH_INFINITE);
     TEST_ASSERT_EQUAL_UINT8(1, touched1);
     TEST_ASSERT_EQUAL_UINT8(0, touched2);
 
@@ -505,12 +502,12 @@ static void break_test()
 }
 
 /** Test that equeue_break function breaks equeue dispatching only once.
- * 
+ *
  *  Given queue is initialized.
  *  When equeue_break is called several times.
  *  Then equeue is stopped only once.
  */
-static void break_no_windup_test()
+static void test_equeue_break_no_windup()
 {
     equeue_t q;
     int err = equeue_create(&q, TEST_EQUEUE_SIZE);
@@ -521,7 +518,7 @@ static void break_no_windup_test()
 
     equeue_break(&q);
     equeue_break(&q);
-    equeue_dispatch(&q, -1);
+    equeue_dispatch(&q, DISPATCH_INFINITE);
     TEST_ASSERT_EQUAL_UINT8(1, touched);
 
     touched = 0;
@@ -532,33 +529,33 @@ static void break_no_windup_test()
 }
 
 /** Test that function passed by equeue_call_every is being executed periodically.
- * 
+ *
  *  Given queue is initialized.
  *  When function is passed by equeue_call_every with specified period.
  *  Then event is executed (dispatch time/period) times.
  */
-static void period_test()
+static void test_equeue_period()
 {
     equeue_t q;
     int err = equeue_create(&q, TEST_EQUEUE_SIZE);
     TEST_ASSERT_EQUAL_INT(0, err);
 
-    int touched = 0;
+    uint8_t touched = 0;
     equeue_call_every(&q, 10, simple_func, &touched);
 
     equeue_dispatch(&q, 55);
-    TEST_ASSERT_EQUAL_INT(5, touched);
+    TEST_ASSERT_EQUAL_UINT8(5, touched);
 
     equeue_destroy(&q);
 }
 
 /** Test that function added to the equeue by other function which already is in equeue executes in the next dispatch, or after the end of execution of the "mother" event.
- * 
+ *
  *  Given queue is initialized.
  *  When nested function is added to enqueue.
  *  Then it is executed in the next dispatch, or after execution of "mother" function.
  */
-static void nested_test()
+static void test_equeue_nested()
 {
     equeue_t q;
     int err = equeue_create(&q, TEST_EQUEUE_SIZE);
@@ -597,12 +594,12 @@ static void nested_test()
 }
 
 /** Test that functions scheduled after slow function would execute according to the schedule if it is possible, if not they would execute right after sloth function.
- * 
+ *
  *  Given queue is initialized.
  *  When sloth function is being called before other functions.
  *  Then if it is possible all functions start according to predefined schedule correctly.
  */
-static void sloth_test()
+static void test_equeue_sloth()
 {
     equeue_t q;
     int err = equeue_create(&q, TEST_EQUEUE_SIZE);
@@ -629,12 +626,12 @@ static void sloth_test()
 }
 
 /** Test that equeue can be broken of dispatching from a different thread.
- * 
+ *
  *  Given queue is initialized.
  *  When equeue starts dispatching in one thread.
  *  Then it can be stopped from another thread via equeue_break.
  */
-static void multithread_test()
+static void test_equeue_multithread()
 {
     equeue_t q;
     int err = equeue_create(&q, TEST_EQUEUE_SIZE);
@@ -656,12 +653,12 @@ static void multithread_test()
 }
 
 /** Test that variable referred via equeue_background shows value in ms to the next event.
- * 
+ *
  *  Given queue is initialized.
  *  When variable is referred via equeue_background.
  *  Then it depicts the time in ms to the next event.
  */
-static void background_test()
+static void test_equeue_background()
 {
     equeue_t q;
     int err = equeue_create(&q, TEST_EQUEUE_SIZE);
@@ -690,12 +687,12 @@ static void background_test()
 }
 
 /** Test that when chaining two equeues, events from both equeues execute by calling dispatch only on target.
- * 
+ *
  *  Given queue is initialized.
  *  When target chained equeue is dispatched.
  *  Then events from both chained equeues are executed.
  */
-static void chain_test()
+static void test_equeue_chain()
 {
     equeue_t q1;
     int err = equeue_create(&q1, TEST_EQUEUE_SIZE);
@@ -743,12 +740,12 @@ static void chain_test()
 }
 
 /** Test that unchaining equeues makes them work on their own.
- * 
+ *
  *  Given queue is initialized.
  *  When equeue is unchained.
  *  Then it can be only dispatched by calling with reference to it.
  */
-static void unchain_test()
+static void test_equeue_unchain()
 {
     equeue_t q1;
     int err = equeue_create(&q1, TEST_EQUEUE_SIZE);
@@ -810,13 +807,13 @@ static void unchain_test()
 // Barrage tests
 
 /** Test that equeue keeps good time at starting events.
- * 
+ *
  *  Given queue is initialized.
  *  When equeue is being dispatched.
  *  Then events happen according to the schedule with an error within a specified range.
  */
 template<int N>
-static void simple_barrage_test()
+static void test_equeue_simple_barrage()
 {
     equeue_t q;
     int err = equeue_create(&q, N * (EQUEUE_EVENT_SIZE + sizeof(struct timing)));
@@ -841,13 +838,13 @@ static void simple_barrage_test()
 }
 
 /** Test that equeue keeps good time at starting events when events are added via functions already placed in equeue.
- * 
+ *
  *  Given queue is initialized.
  *  When equeue is being dispatched and new events are added via already placed in equeue.
  *  Then events happen according to the schedule with an error within a specified range.
  */
 template<int N>
-static void fragmenting_barrage_test()
+static void test_equeue_fragmenting_barrage()
 {
     equeue_t q;
     int err = equeue_create(&q,
@@ -875,13 +872,13 @@ static void fragmenting_barrage_test()
 }
 
 /** Test that equeue keeps good time at starting events even if it is working on different thread.
- * 
+ *
  *  Given queue is initialized.
  *  When equeue is being dispatched on different thread.
  *  Then events happen according to the schedule with an error within a specified range.
  */
 template<int N>
-static void multithreaded_barrage_test()
+static void test_equeue_multithreaded_barrage()
 {
     equeue_t q;
     int err = equeue_create(&q, N * (EQUEUE_EVENT_SIZE + sizeof(struct timing)));
@@ -915,12 +912,12 @@ static void multithreaded_barrage_test()
 }
 
 /** Test that break request flag is cleared when equeue stops dispatching timeouts.
- * 
+ *
  *  Given queue is initialized.
  *  When equeue break request flag is called but equeue stops dispatching because of timeout.
  *  Then next equeue dispatch is not stopped.
  */
-static void break_request_cleared_on_timeout_test()
+static void test_equeue_break_request_cleared_on_timeout()
 {
     equeue_t q;
     int err = equeue_create(&q, TEST_EQUEUE_SIZE);
@@ -948,12 +945,12 @@ static void break_request_cleared_on_timeout_test()
 }
 
 /** Test that siblings events don't have next pointers.
- * 
+ *
  *  Given queue is initialized.
  *  When events are scheduled on the same time.
- *  Then they are connected via sibling pointers and siblings have their next pointer pointing to null.
+ *  Then they are connected via sibling pointers and siblings have their next pointer pointing to NULL.
  */
-static void sibling_test()
+static void test_equeue_sibling()
 {
     equeue_t q;
     int err = equeue_create(&q, TEST_EQUEUE_SIZE);
@@ -978,34 +975,34 @@ static void sibling_test()
 
 
 Case cases[] = {
-    Case("simple call test", simple_call_test),
-    Case("simple call in test", simple_call_in_test),
-    Case("simple call every test", simple_call_every_test),
-    Case("simple post test", simple_post_test),
+    Case("simple call test", test_equeue_simple_call),
+    Case("simple call in test", test_equeue_simple_call_in),
+    Case("simple call every test", test_equeue_simple_call_every),
+    Case("simple post test", test_equeue_simple_post),
 
-    Case("destructor test", destructor_test),
-    Case("allocation failure test", allocation_failure_test),
-    Case("cancel test", cancel_test<20>),
-    Case("cancel inflight test", cancel_inflight_test),
-    Case("cancel unnecessarily test", cancel_unnecessarily_test),
-    Case("loop protect test", loop_protect_test),
-    Case("break test", break_test),
-    Case("break no windup test", break_no_windup_test),
-    Case("period test", period_test),
-    Case("nested test", nested_test),
-    Case("sloth test", sloth_test),
+    Case("destructor test", test_equeue_destructor),
+    Case("allocation failure test", test_equeue_allocation_failure),
+    Case("cancel test", test_equeue_cancel<20>),
+    Case("cancel inflight test", test_equeue_cancel_inflight),
+    Case("cancel unnecessarily test", test_equeue_cancel_unnecessarily),
+    Case("loop protect test", test_equeue_loop_protect),
+    Case("break test", test_equeue_break),
+    Case("break no windup test", test_equeue_break_no_windup),
+    Case("period test", test_equeue_period),
+    Case("nested test", test_equeue_nested),
+    Case("sloth test", test_equeue_sloth),
 
-    Case("multithread test", multithread_test),
+    Case("multithread test", test_equeue_multithread),
 
-    Case("background test", background_test),
-    Case("chain test", chain_test),
-    Case("unchain test", unchain_test),
+    Case("background test", test_equeue_background),
+    Case("chain test", test_equeue_chain),
+    Case("unchain test", test_equeue_unchain),
 
-    Case("simple barrage test", simple_barrage_test<20>),
-    Case("fragmenting barrage test", fragmenting_barrage_test<10>),
-    Case("multithreaded barrage test", multithreaded_barrage_test<10>),
-    Case("break request cleared on timeout test", break_request_cleared_on_timeout_test),
-    Case("sibling test", sibling_test)
+    Case("simple barrage test", test_equeue_simple_barrage<20>),
+    Case("fragmenting barrage test", test_equeue_fragmenting_barrage<10>),
+    Case("multithreaded barrage test", test_equeue_multithreaded_barrage<10>),
+    Case("break request cleared on timeout test", test_equeue_break_request_cleared_on_timeout),
+    Case("sibling test", test_equeue_sibling)
 
 };
 
