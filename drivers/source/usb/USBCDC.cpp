@@ -292,8 +292,8 @@ void USBCDC::callback_set_configuration(uint8_t configuration)
     if (configuration == DEFAULT_CONFIGURATION) {
         // Configure endpoints > 0
         endpoint_add(_int_in, CDC_MAX_PACKET_SIZE, USB_EP_TYPE_INT);
-        endpoint_add(_bulk_in, CDC_MAX_PACKET_SIZE, USB_EP_TYPE_BULK, &USBCDC::_send_isr);
-        endpoint_add(_bulk_out, CDC_MAX_PACKET_SIZE, USB_EP_TYPE_BULK, &USBCDC::_receive_isr);
+        endpoint_add(_bulk_in, CDC_MAX_PACKET_SIZE, USB_EP_TYPE_BULK, mbed::callback(this, &USBCDC::_send_isr));
+        endpoint_add(_bulk_out, CDC_MAX_PACKET_SIZE, USB_EP_TYPE_BULK, mbed::callback(this, &USBCDC::_receive_isr));
 
         read_start(_bulk_out, _rx_buf, sizeof(_rx_buffer));
         _rx_in_progress = true;

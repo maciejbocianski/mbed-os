@@ -542,8 +542,8 @@ void USBAudio::callback_set_configuration(uint8_t configuration)
         endpoint_remove_all();
 
         // Configure isochronous endpoint
-        endpoint_add(_episo_out, _rx_packet_size_max, USB_EP_TYPE_ISO,  static_cast<ep_cb_t>(&USBAudio::_receive_isr));
-        endpoint_add(_episo_in, _tx_packet_size_max, USB_EP_TYPE_ISO,  static_cast<ep_cb_t>(&USBAudio::_send_isr));
+        endpoint_add(_episo_out, _rx_packet_size_max, USB_EP_TYPE_ISO, mbed::callback(this, &USBAudio::_receive_isr));
+        endpoint_add(_episo_in, _tx_packet_size_max, USB_EP_TYPE_ISO, mbed::callback(this, &USBAudio::_send_isr));
 
         // activate readings on this endpoint
         read_start(_episo_out, _rx_packet_buf, _rx_packet_size_max);

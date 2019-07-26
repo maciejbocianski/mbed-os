@@ -459,8 +459,8 @@ void USBMSD::_configure()
     _mutex.lock();
 
     // Configure endpoints > 0
-    endpoint_add(_bulk_in, MAX_PACKET, USB_EP_TYPE_BULK, &USBMSD::_isr_in);
-    endpoint_add(_bulk_out, MAX_PACKET, USB_EP_TYPE_BULK, &USBMSD::_isr_out);
+    endpoint_add(_bulk_in, MAX_PACKET, USB_EP_TYPE_BULK, mbed::callback(this, &USBMSD::_isr_in));
+    endpoint_add(_bulk_out, MAX_PACKET, USB_EP_TYPE_BULK, mbed::callback(this, &USBMSD::_isr_out));
     MBED_ASSERT(sizeof(_bulk_out_buf) == MAX_PACKET);
     MBED_ASSERT(sizeof(_bulk_in_buf) == MAX_PACKET);
 

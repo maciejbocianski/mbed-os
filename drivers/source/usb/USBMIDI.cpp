@@ -222,8 +222,8 @@ void USBMIDI::callback_set_configuration(uint8_t configuration)
     }
 
     endpoint_remove_all();
-    endpoint_add(_bulk_in, MaxSize, USB_EP_TYPE_BULK, &USBMIDI::_in_callback);
-    endpoint_add(_bulk_out, MaxSize, USB_EP_TYPE_BULK, &USBMIDI::_out_callback);
+    endpoint_add(_bulk_in, MaxSize, USB_EP_TYPE_BULK, mbed::callback(this, &USBMIDI::_in_callback));
+    endpoint_add(_bulk_out, MaxSize, USB_EP_TYPE_BULK, mbed::callback(this, &USBMIDI::_out_callback));
 
     read_start(_bulk_out, _bulk_buf, MaxSize);
 

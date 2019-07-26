@@ -376,8 +376,8 @@ void USBHID::callback_set_configuration(uint8_t configuration)
     }
 
     // Configure endpoints > 0
-    endpoint_add(_int_in, MAX_HID_REPORT_SIZE, USB_EP_TYPE_INT, &USBHID::_send_isr);
-    endpoint_add(_int_out, MAX_HID_REPORT_SIZE, USB_EP_TYPE_INT, &USBHID::_read_isr);
+    endpoint_add(_int_in, MAX_HID_REPORT_SIZE, USB_EP_TYPE_INT, mbed::callback(this, &USBHID::_send_isr));
+    endpoint_add(_int_out, MAX_HID_REPORT_SIZE, USB_EP_TYPE_INT, mbed::callback(this, &USBHID::_read_isr));
 
     // We activate the endpoint to be able to recceive data
     read_start(_int_out, _output_report.data, MAX_HID_REPORT_SIZE);

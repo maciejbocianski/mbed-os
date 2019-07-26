@@ -318,9 +318,9 @@ void USBCDC_ECM::callback_set_interface(uint16_t interface, uint8_t alternate)
     if (alternate) {
         _packet_filter = 0;
 
-        endpoint_add(_int_in, MAX_PACKET_SIZE_INT, USB_EP_TYPE_INT, &USBCDC_ECM::_int_callback);
-        endpoint_add(_bulk_in, MAX_PACKET_SIZE_BULK, USB_EP_TYPE_BULK, &USBCDC_ECM::_bulk_in_callback);
-        endpoint_add(_bulk_out, MAX_PACKET_SIZE_BULK, USB_EP_TYPE_BULK, &USBCDC_ECM::_bulk_out_callback);
+        endpoint_add(_int_in, MAX_PACKET_SIZE_INT, USB_EP_TYPE_INT, mbed::callback(this, &USBCDC_ECM::_int_callback));
+        endpoint_add(_bulk_in, MAX_PACKET_SIZE_BULK, USB_EP_TYPE_BULK, mbed::callback(this, &USBCDC_ECM::_bulk_in_callback));
+        endpoint_add(_bulk_out, MAX_PACKET_SIZE_BULK, USB_EP_TYPE_BULK, mbed::callback(this, &USBCDC_ECM::_bulk_out_callback));
 
         read_start(_bulk_out, _bulk_buf, MAX_PACKET_SIZE_BULK);
 
