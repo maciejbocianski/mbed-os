@@ -74,7 +74,7 @@ public:
         bool dir_in;
         usb_ep_type_t type;
         uint32_t max_packet;
-        ep_cb_t callback;
+        void (USBEndpointTester::*callback)();
     };
 
 protected:

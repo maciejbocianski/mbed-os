@@ -86,12 +86,12 @@
 #define EP_ISO_IN   5
 
 USBEndpointTester::ep_config_t USBEndpointTester::_intf_config_max[NUM_ENDPOINTS] = {
-    { false, USB_EP_TYPE_BULK, TEST_SIZE_EP_BULK_MAX, static_cast<ep_cb_t>(&USBEndpointTester::_cb_bulk_out) },
-    { true, USB_EP_TYPE_BULK, TEST_SIZE_EP_BULK_MAX, static_cast<ep_cb_t>(&USBEndpointTester::_cb_bulk_in) },
-    { false, USB_EP_TYPE_INT, TEST_SIZE_EP_INT_MAX, static_cast<ep_cb_t>(&USBEndpointTester::_cb_int_out) },
-    { true, USB_EP_TYPE_INT, TEST_SIZE_EP_INT_MAX, static_cast<ep_cb_t>(&USBEndpointTester::_cb_int_in) },
-    { false, USB_EP_TYPE_ISO, TEST_SIZE_EP_ISO_MAX, static_cast<ep_cb_t>(&USBEndpointTester::_cb_iso_out) },
-    { true, USB_EP_TYPE_ISO, TEST_SIZE_EP_ISO_MAX, static_cast<ep_cb_t>(&USBEndpointTester::_cb_iso_in) },
+    { false, USB_EP_TYPE_BULK, TEST_SIZE_EP_BULK_MAX, &USBEndpointTester::_cb_bulk_out },
+    { true, USB_EP_TYPE_BULK, TEST_SIZE_EP_BULK_MAX, &USBEndpointTester::_cb_bulk_in },
+    { false, USB_EP_TYPE_INT, TEST_SIZE_EP_INT_MAX, &USBEndpointTester::_cb_int_out },
+    { true, USB_EP_TYPE_INT, TEST_SIZE_EP_INT_MAX, &USBEndpointTester::_cb_int_in },
+    { false, USB_EP_TYPE_ISO, TEST_SIZE_EP_ISO_MAX, &USBEndpointTester::_cb_iso_out },
+    { true, USB_EP_TYPE_ISO, TEST_SIZE_EP_ISO_MAX, &USBEndpointTester::_cb_iso_in },
 };
 
 USBEndpointTester::ep_config_t USBEndpointTester::_intf_config0[NUM_ENDPOINTS] = {
@@ -104,39 +104,39 @@ USBEndpointTester::ep_config_t USBEndpointTester::_intf_config0[NUM_ENDPOINTS] =
 };
 
 USBEndpointTester::ep_config_t USBEndpointTester::_intf_config1[NUM_ENDPOINTS] = {
-    { false, USB_EP_TYPE_BULK, TEST_SIZE_EP_BULK_1, static_cast<ep_cb_t>(&USBEndpointTester::_cb_bulk_out) },
-    { true, USB_EP_TYPE_BULK, TEST_SIZE_EP_BULK_1, static_cast<ep_cb_t>(&USBEndpointTester::_cb_bulk_in) },
-    { false, USB_EP_TYPE_INT, TEST_SIZE_EP_INT_1, static_cast<ep_cb_t>(&USBEndpointTester::_cb_int_out) },
-    { true, USB_EP_TYPE_INT, TEST_SIZE_EP_INT_1, static_cast<ep_cb_t>(&USBEndpointTester::_cb_int_in) },
-    { false, USB_EP_TYPE_ISO, TEST_SIZE_EP_ISO_1, static_cast<ep_cb_t>(&USBEndpointTester::_cb_iso_out) },
-    { true, USB_EP_TYPE_ISO, TEST_SIZE_EP_ISO_1, static_cast<ep_cb_t>(&USBEndpointTester::_cb_iso_in) },
+    { false, USB_EP_TYPE_BULK, TEST_SIZE_EP_BULK_1, &USBEndpointTester::_cb_bulk_out },
+    { true, USB_EP_TYPE_BULK, TEST_SIZE_EP_BULK_1, &USBEndpointTester::_cb_bulk_in },
+    { false, USB_EP_TYPE_INT, TEST_SIZE_EP_INT_1, &USBEndpointTester::_cb_int_out },
+    { true, USB_EP_TYPE_INT, TEST_SIZE_EP_INT_1, &USBEndpointTester::_cb_int_in },
+    { false, USB_EP_TYPE_ISO, TEST_SIZE_EP_ISO_1, &USBEndpointTester::_cb_iso_out },
+    { true, USB_EP_TYPE_ISO, TEST_SIZE_EP_ISO_1, &USBEndpointTester::_cb_iso_in },
 };
 
 USBEndpointTester::ep_config_t USBEndpointTester::_intf_config2[NUM_ENDPOINTS] = {
-    { false, USB_EP_TYPE_BULK, TEST_SIZE_EP_BULK_2, static_cast<ep_cb_t>(&USBEndpointTester::_cb_bulk_out) },
-    { true, USB_EP_TYPE_BULK, TEST_SIZE_EP_BULK_2, static_cast<ep_cb_t>(&USBEndpointTester::_cb_bulk_in) },
-    { false, USB_EP_TYPE_INT, TEST_SIZE_EP_INT_2, static_cast<ep_cb_t>(&USBEndpointTester::_cb_int_out) },
-    { true, USB_EP_TYPE_INT, TEST_SIZE_EP_INT_2, static_cast<ep_cb_t>(&USBEndpointTester::_cb_int_in) },
-    { false, USB_EP_TYPE_ISO, TEST_SIZE_EP_ISO_2, static_cast<ep_cb_t>(&USBEndpointTester::_cb_iso_out) },
-    { true, USB_EP_TYPE_ISO, TEST_SIZE_EP_ISO_2, static_cast<ep_cb_t>(&USBEndpointTester::_cb_iso_in) },
+    { false, USB_EP_TYPE_BULK, TEST_SIZE_EP_BULK_2, &USBEndpointTester::_cb_bulk_out },
+    { true, USB_EP_TYPE_BULK, TEST_SIZE_EP_BULK_2, &USBEndpointTester::_cb_bulk_in },
+    { false, USB_EP_TYPE_INT, TEST_SIZE_EP_INT_2, &USBEndpointTester::_cb_int_out },
+    { true, USB_EP_TYPE_INT, TEST_SIZE_EP_INT_2, &USBEndpointTester::_cb_int_in },
+    { false, USB_EP_TYPE_ISO, TEST_SIZE_EP_ISO_2, &USBEndpointTester::_cb_iso_out },
+    { true, USB_EP_TYPE_ISO, TEST_SIZE_EP_ISO_2, &USBEndpointTester::_cb_iso_in },
 };
 
 USBEndpointTester::ep_config_t USBEndpointTester::_intf_config3[NUM_ENDPOINTS] = {
-    { false, USB_EP_TYPE_BULK, TEST_SIZE_EP_BULK_3, static_cast<ep_cb_t>(&USBEndpointTester::_cb_bulk_out) },
-    { true, USB_EP_TYPE_BULK, TEST_SIZE_EP_BULK_3, static_cast<ep_cb_t>(&USBEndpointTester::_cb_bulk_in) },
-    { false, USB_EP_TYPE_INT, TEST_SIZE_EP_INT_3, static_cast<ep_cb_t>(&USBEndpointTester::_cb_int_out) },
-    { true, USB_EP_TYPE_INT, TEST_SIZE_EP_INT_3, static_cast<ep_cb_t>(&USBEndpointTester::_cb_int_in) },
-    { false, USB_EP_TYPE_ISO, TEST_SIZE_EP_ISO_3, static_cast<ep_cb_t>(&USBEndpointTester::_cb_iso_out) },
-    { true, USB_EP_TYPE_ISO, TEST_SIZE_EP_ISO_3, static_cast<ep_cb_t>(&USBEndpointTester::_cb_iso_in) },
+    { false, USB_EP_TYPE_BULK, TEST_SIZE_EP_BULK_3, &USBEndpointTester::_cb_bulk_out },
+    { true, USB_EP_TYPE_BULK, TEST_SIZE_EP_BULK_3, &USBEndpointTester::_cb_bulk_in },
+    { false, USB_EP_TYPE_INT, TEST_SIZE_EP_INT_3, &USBEndpointTester::_cb_int_out },
+    { true, USB_EP_TYPE_INT, TEST_SIZE_EP_INT_3, &USBEndpointTester::_cb_int_in },
+    { false, USB_EP_TYPE_ISO, TEST_SIZE_EP_ISO_3, &USBEndpointTester::_cb_iso_out },
+    { true, USB_EP_TYPE_ISO, TEST_SIZE_EP_ISO_3, &USBEndpointTester::_cb_iso_in },
 };
 
 USBEndpointTester::ep_config_t USBEndpointTester::_intf_config4[NUM_ENDPOINTS] = {
-    { false, USB_EP_TYPE_BULK, TEST_SIZE_EP_BULK_4, static_cast<ep_cb_t>(&USBEndpointTester::_cb_bulk_out) },
-    { true, USB_EP_TYPE_BULK, TEST_SIZE_EP_BULK_4, static_cast<ep_cb_t>(&USBEndpointTester::_cb_bulk_in) },
-    { false, USB_EP_TYPE_INT, TEST_SIZE_EP_INT_4, static_cast<ep_cb_t>(&USBEndpointTester::_cb_int_out) },
-    { true, USB_EP_TYPE_INT, TEST_SIZE_EP_INT_4, static_cast<ep_cb_t>(&USBEndpointTester::_cb_int_in) },
-    { false, USB_EP_TYPE_ISO, TEST_SIZE_EP_ISO_4, static_cast<ep_cb_t>(&USBEndpointTester::_cb_iso_out) },
-    { true, USB_EP_TYPE_ISO, TEST_SIZE_EP_ISO_4, static_cast<ep_cb_t>(&USBEndpointTester::_cb_iso_in) },
+    { false, USB_EP_TYPE_BULK, TEST_SIZE_EP_BULK_4, &USBEndpointTester::_cb_bulk_out },
+    { true, USB_EP_TYPE_BULK, TEST_SIZE_EP_BULK_4, &USBEndpointTester::_cb_bulk_in },
+    { false, USB_EP_TYPE_INT, TEST_SIZE_EP_INT_4, &USBEndpointTester::_cb_int_out },
+    { true, USB_EP_TYPE_INT, TEST_SIZE_EP_INT_4, &USBEndpointTester::_cb_int_in },
+    { false, USB_EP_TYPE_ISO, TEST_SIZE_EP_ISO_4, &USBEndpointTester::_cb_iso_out },
+    { true, USB_EP_TYPE_ISO, TEST_SIZE_EP_ISO_4, &USBEndpointTester::_cb_iso_in },
 };
 
 USBEndpointTester::USBEndpointTester(USBPhy *phy, uint16_t vendor_id, uint16_t product_id, uint16_t product_release,
@@ -390,7 +390,7 @@ void USBEndpointTester::_setup_non_zero_endpoints()
     ep_config_t *epc = NULL;
     for (size_t i = 0; i < NUM_ENDPOINTS; i++) {
         epc = &((*_endpoint_configs)[i]);
-        endpoint_add(_endpoints[i], epc->max_packet, epc->type, epc->callback);
+        endpoint_add(_endpoints[i], epc->max_packet, epc->type, mbed::callback(this, epc->callback));
         if (epc->callback == NULL) {
             continue;
         }

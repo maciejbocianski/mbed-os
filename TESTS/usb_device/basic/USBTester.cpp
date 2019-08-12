@@ -226,7 +226,7 @@ bool USBTester::setup_iterface(uint8_t ep_in, uint8_t ep_out, uint32_t ep_size, 
     bool success = false;
 
     success = endpoint_add(ep_in, ep_size, ep_type);
-    success &= endpoint_add(ep_out, ep_size, ep_type, callback);
+    success &= endpoint_add(ep_out, ep_size, ep_type, mbed::callback(this, callback));
     success &= read_start(ep_out, buf, buf_size);
     return success;
 }
